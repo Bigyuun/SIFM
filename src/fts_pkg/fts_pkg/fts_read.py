@@ -13,7 +13,9 @@ from rclpy.qos import QoSReliabilityPolicy
 from rclpy.parameter import Parameter
 from rcl_interfaces.msg import SetParametersResult
 
+from std_msgs.msg import Header
 from geometry_msgs.msg import WrenchStamped
+from custom_interfaces.msg import MotorCommand
 
 import os
 
@@ -41,7 +43,7 @@ class FTS(Node):
         self.fts_publisher = self.create_publisher(
             WrenchStamped,
             'fts_data_raw',
-            qos_depth
+            QOS_RKL10V
         )
 
         self.serial_port = '/dev/ttyACM0'  # 사용하는 시리얼 포트(COM 포트)를 지정하세요.
