@@ -25,7 +25,11 @@
           "${workspaceFoler}/**",
           "/opt/ros/humble/include/**",
           "/home/daeyun/Desktop/github_repos/SIFM/**",
-          // "/home/daeyun/Desktop/github_repos/SIFM/install/custom_interfaces/include",
+          "/home/daeyun/Desktop/github_repos/SIFM/src/tcp_pkg/include/**",
+          "/home/daeyun/Desktop/github_repos/SIFM/install/custom_interfaces/**",
+          "/home/daeyun/Desktop/github_repos/SIFM/install/custom_interfaces/msg/**",
+          "/home/daeyun/Desktop/github_repos/SIFM/src/custom_interfaces/msg/**"
+          "/usr/lib/python3/dist-packages/PyQt5/**",
           // "/home/daeyun/Desktop/github_repos/SIFM/src/tcp_pkg/include/**",
           // "/home/daeyun/Desktop/github_repos/SIFM/src/loadcell_pkg/**",
           // "/home/daeyun/Desktop/github_repos/SIFM/src/surgical_robot_control/include/**",
