@@ -27,8 +27,8 @@ TCPClientNode::TCPClientNode(const rclcpp::NodeOptions & node_options)
       QoS_RKL10V,
       [this] (const MotorCommand::SharedPtr msg) -> void
       {
-        tcp_send_msg_.header.stamp = msg->header.stamp;
-        tcp_send_msg_.header.frame_id = msg->header.frame_id;
+        tcp_send_msg_.header = msg->header;
+        // tcp_send_msg_.header.frame_id = msg->header.frame_id;
         tcp_send_msg_.target_position = msg->target_position;
         tcp_send_msg_.target_velocity_profile = msg->target_velocity_profile;
       }
@@ -180,7 +180,7 @@ void TCPClientNode::recvmsg()
   for(int i=0; i<NUM_OF_MOTORS; i++) {
     // tcp_read_msg_.stamp = this->now();
     tcp_read_msg_.header.stamp = this->now();
-    tcp_read_msg_.header.frame_id = 'motor_controller'
+    tcp_read_msg_.header.frame_id = "motor_controller";
     tcp_read_msg_.actual_position[i] = recv_val[2*i];
     tcp_read_msg_.actual_velocity[i] = recv_val[2*i+1];
   }

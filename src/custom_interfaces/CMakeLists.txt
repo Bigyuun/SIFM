@@ -13,7 +13,6 @@ find_package(sensor_msgs REQUIRED)
 find_package(builtin_interfaces REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
-# Declare ROS messages, services and actions
 set(msg_files
   "msg/MotorState.msg"
   "msg/MotorCommand.msg"
@@ -35,7 +34,6 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   ${action_files}
   DEPENDENCIES builtin_interfaces std_msgs geometry_msgs
 )
-
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

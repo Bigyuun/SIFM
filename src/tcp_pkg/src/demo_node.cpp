@@ -29,6 +29,7 @@ public:
     timer_ = this->create_wall_timer(
       1ms, std::bind(&DemoNode::publish_msg, this));
 
+    RCLCPP_INFO(this->get_logger(), "Declared num of motors : %i", NUM_OF_MOTORS);
     tcp_send_msg_.target_position.resize(NUM_OF_MOTORS);
     tcp_send_msg_.target_velocity_profile.resize(NUM_OF_MOTORS);
     demo_node_subscriber_ = this->create_subscription<MotorCommand>(
@@ -36,7 +37,8 @@ public:
       QoS_RKL10V,
       [this] (const MotorCommand::SharedPtr msg) -> void
         {
-          tcp_send_msg_.stamp = msg->stamp;
+          // tcp_send_msg_.header.stamp = msg->stamp;
+          tcp_send_msg_.header = msg->header;
           tcp_send_msg_.target_position = msg->target_position;
           tcp_send_msg_.target_velocity_profile = msg->target_velocity_profile;
         }
@@ -54,7 +56,8 @@ private:
     msg.actual_acceleration.resize(NUM_OF_MOTORS);
     msg.actual_torque.resize(NUM_OF_MOTORS);
     
-    msg.stamp = this->now();
+    msg.header.stamp = this->now();
+    msg.header.frame_id = "motor_controller";
     demo_node_publisher_->publish(msg);
   }
 
