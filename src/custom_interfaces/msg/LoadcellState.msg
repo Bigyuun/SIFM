@@ -1,5 +1,5 @@
 # Loadcell data
 # builtin_interfaces/Time stamp
 std_msgs/Header header
-float32[] threshold
-float32[] data
+float32[] stress
+float32[] voltage

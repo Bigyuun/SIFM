@@ -82,17 +82,6 @@ public:
   SurgicalTool ST_;
 
   /**
-   * @author DY
-   * @brief E, W, S, N direction check (+1) or (-1)
-   * @note  In xbox's left axes -> E:-, W:+, S:-, N:+
-   *        In our definition   -> E:-, W:+, S:+, N:-
-   *        mapping joystick data to angle of hardware limitation
-   */
-  double mapping_joystick_to_bending_p();
-  double mapping_joystick_to_bending_t();
-  double mapping_joystick_to_forceps();
-
-  /**
    * @author DY, JKim
    * @def    cal_kinematics
    * @brief  calculate target values(length of wire) from the surgical tool kinematics,

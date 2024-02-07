@@ -20,7 +20,7 @@
 #define ENCODER_RESOLUTION  1024
 #define INC_PER_ROT_44      GEAR_RATIO_44 * ENCODER_CHANNEL * ENCODER_RESOLUTION
 #define INC_PER_ROT_3_9     GEAR_RATIO_3_9 * ENCODER_CHANNEL * ENCODER_RESOLUTION
-#define DIRECTION_COUPLER   -1      // if not, use 1         
+#define DIRECTION_COUPLER   1      // if not, use 1         
 
 /** Motor control mode **/
 /**
@@ -33,7 +33,7 @@
 //===============================
 // Continuum Manipulator Paremeters
 //===============================
-#define DOF               2     // Degree of freedom
+#define DOF               1     // Degree of freedom
 #define NUM_OF_JOINT      5     // ea
 #define SEGMENT_ARC       6.92  // mm
 #define SEGMENT_DIAMETER  3     // mm
@@ -43,7 +43,7 @@
 #define SHIFT_THRESHOLD   5.0  // deg
 
 #define MAX_BENDING_DEGREE   90.0 // degree
-#define MAX_FORCEPS_RAGNE_DEGREE 30.0  // mm
+#define MAX_FORCEPS_RAGNE_DEGREE 30.0  // degree
 #define MAX_FORCEPS_RAGNE_MM 2.0  // mm (nor int)
 
 #define JOINT_INTERVAL    3   // mm

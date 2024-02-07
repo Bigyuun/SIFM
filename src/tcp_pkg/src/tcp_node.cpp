@@ -23,7 +23,7 @@ TCPClientNode::TCPClientNode(const rclcpp::NodeOptions & node_options)
   tcp_send_msg_.target_velocity_profile.resize(NUM_OF_MOTORS);
   tcp_subscriber_ =
     this->create_subscription<MotorCommand>(
-      "kinematics_control_target_val",
+      "motor_command",
       QoS_RKL10V,
       [this] (const MotorCommand::SharedPtr msg) -> void
       {
@@ -31,6 +31,8 @@ TCPClientNode::TCPClientNode(const rclcpp::NodeOptions & node_options)
         // tcp_send_msg_.header.frame_id = msg->header.frame_id;
         tcp_send_msg_.target_position = msg->target_position;
         tcp_send_msg_.target_velocity_profile = msg->target_velocity_profile;
+        RCLCPP_INFO(this->get_logger(), "motor command received.");
+        RCLCPP_INFO(this->get_logger(), "motor command received.");
       }
     );
 
@@ -163,7 +165,6 @@ void TCPClientNode::recvmsg()
     }
     RCLCPP_INFO(this->get_logger(), "TCP communication Thread is onfigure");
   }
-
   memcpy(recv_val, this->recv_msg_, sizeof(this->recv_msg_));
 
   /**
@@ -175,6 +176,8 @@ void TCPClientNode::recvmsg()
       // std::cout << "[READ] #" << i << "| pos : " << htole16(recv_val[i*2]) << " / vel : " << htole16(recv_val[2*i + 1]) << std::endl;
       std::cout << "[READ] #" << i << "| pos : " << recv_val[i*2] << " / vel : " << recv_val[2*i + 1] << std::endl;
   }
+  std::cout << tcp_read_msg_.header.stamp.nanosec << std::endl;;
+  printf("=====================================================\n");
 #endif
 
   for(int i=0; i<NUM_OF_MOTORS; i++) {
@@ -184,6 +187,7 @@ void TCPClientNode::recvmsg()
     tcp_read_msg_.actual_position[i] = recv_val[2*i];
     tcp_read_msg_.actual_velocity[i] = recv_val[2*i+1];
   }
+
   publishall();
 }
 

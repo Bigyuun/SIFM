@@ -1,4 +1,4 @@
-#include "kinematic_control_node.hpp"
+#include "kinematics_control_node.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include <algorithm>  
 
@@ -15,18 +15,17 @@ KinematicsControlNode::KinematicsControlNode(const rclcpp::NodeOptions & node_op
   const auto QoS_RKL10V =
   rclcpp::QoS(rclcpp::KeepLast(qos_depth)).reliable().durability_volatile();
 
-
   //===============================
   // target value publisher
   //===============================
-  this->kinematics_control_target_val_.target_position.resize(NUM_OF_MOTORS);
-  this->kinematics_control_target_val_.target_velocity_profile.resize(NUM_OF_MOTORS);
+  this->motor_control_target_val_.target_position.resize(NUM_OF_MOTORS);
+  this->motor_control_target_val_.target_velocity_profile.resize(NUM_OF_MOTORS);
   for(int i=0; i<NUM_OF_MOTORS; i++) {
     this->kinematics_control_target_val_.target_velocity_profile[i] = PERCENT_100/2;
   }
-  kinematics_control_publisher_ =
-    this->create_publisher<MotorCommand>("kinematics_control_target_val", QoS_RKL10V);
-
+  motor_control_publisher_ =
+    this->create_publisher<MotorCommand>("motor_command", QoS_RKL10V);
+  RCLCPP_INFO(this->get_logger(), "Publisher 'motor_command' is created.")
   //===============================
   // surgical tool pose(degree) publisher
   //===============================
@@ -46,28 +45,26 @@ KinematicsControlNode::KinematicsControlNode(const rclcpp::NodeOptions & node_op
       QoS_RKL10V,
       [this] (const MotorState::SharedPtr msg) -> void
       {
-        RCLCPP_WARN_ONCE(this->get_logger(), "Subscribing the /motor_state.");
+        RCLCPP_INFO_ONCE(this->get_logger(), "Subscribing the /motor_state.");
         this->op_mode_ = kEnable;
         this->motorstate_op_flag_ = true;
-        this->motor_state_.stamp = msg->stamp;
+        this->motor_state_.header = msg->header;
         this->motor_state_.actual_position =  msg->actual_position;
         this->motor_state_.actual_velocity =  msg->actual_velocity;
         this->motor_state_.actual_acceleration =  msg->actual_acceleration;
         this->motor_state_.actual_torque =  msg->actual_torque;
 
-        if(this->op_mode_ == kEnable) {
-          this->cal_kinematics();
-        }
-        this->kinematics_control_publisher_->publish(this->kinematics_control_target_val_);
-        this->surgical_tool_pose_publisher_->publish(this->surgical_tool_pose_);
+        // if(this->op_mode_ == kEnable) {
+        //   this->cal_kinematics();
+        //   this->motor_control_publisher_->publish(this->motor_control_target_val_);
+        //   this->surgical_tool_pose_publisher_->publish(this->surgical_tool_pose_);
+        // }
       }
     );
   
   //===============================
   // loadcell data subscriber
   //===============================
-  this->loadcell_data_.data.resize(10);
-  this->loadcell_data_.threshold.resize(10);
   loadcell_data_subscriber_ =
     this->create_subscription<custom_interfaces::msg::LoadcellState>(
       "loadcell_data",
@@ -75,18 +72,18 @@ KinematicsControlNode::KinematicsControlNode(const rclcpp::NodeOptions & node_op
       [this] (const custom_interfaces::msg::LoadcellState::SharedPtr msg) -> void
       {
         this->loadcell_op_flag_ = true;
-        this->loadcell_data_.threshold = msg->threshold;
-        this->loadcell_data_.data = msg->data;
+        this->loadcell_data_.header = msg->header;
+        this->loadcell_data_.stress = msg->stress;
+        this->loadcell_data_.output_voltage = msg->output_voltage;
         RCLCPP_INFO_ONCE(this->get_logger(), "Subscribing the /loadcell_data.");
-        RCLCPP_WARN_ONCE(this->get_logger(), "Subscribing the /loadcell_data.");
       }
     );
+
   /**
    * @brief if use custom surgical tool, initialize.
    */
   // STLeft_.init_surgicaltool(1,1,1,1);
   // STRight_.init_surgicaltool(1,1,1,1);
-
 
   /**
    * @brief homing
@@ -102,7 +99,6 @@ void KinematicsControlNode::cal_kinematics() {
   /* code */
   /* input : actual pos & actual velocity & controller input */
   /* output : target value*/
-
   this->surgical_tool_pose_.angular.y = tAngle * M_PI/180;
   this->surgical_tool_pose_.angular.z = pAngle * M_PI/180;
 
@@ -132,7 +128,8 @@ void KinematicsControlNode::cal_kinematics() {
   //   }
   // }
 
-  this->kinematics_control_target_val_.stamp = this->now();
+  this->kinematics_control_target_val_.header.stamp = this->now();
+  this->kinematics_control_target_val_.header.frame_id = "kinematic_target_values";
   this->kinematics_control_target_val_.target_position[0] = this->virtual_home_pos_[0]
                                                             + DIRECTION_COUPLER * f_val[0] * gear_encoder_ratio_conversion(GEAR_RATIO_44, ENCODER_CHANNEL, ENCODER_RESOLUTION);
   this->kinematics_control_target_val_.target_position[1] = this->virtual_home_pos_[1]

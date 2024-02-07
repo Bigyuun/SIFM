@@ -1,6 +1,6 @@
 
 /**
- * @file kinematic_control_node.hpp
+ * @file kinematics_control_node.hpp
  * @author daeyun (bigyun9375@gmail.com)
  * @brief 
  * @version 0.1
@@ -9,8 +9,8 @@
  * @copyright Copyright (c) 2023
  * 
  */
-#ifndef KINEMATIC_CONTROL_NODE_HPP_
-#define KINEMATIC_CONTROL_NODE_HPP_
+#ifndef KINEMATICS_CONTROL_NODE_HPP_
+#define KINEMATICS_CONTROL_NODE_HPP_
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -56,6 +56,7 @@
 typedef enum  {
   kStop = 0,
   kEnable = 1,
+  kReady = 2,
   kHoming = 5,
 } OpMode;
 
@@ -80,17 +81,6 @@ public:
    * @brief sugical_tool.hpp
    */
   SurgicalTool ST_;
-
-  /**
-   * @author DY
-   * @brief E, W, S, N direction check (+1) or (-1)
-   * @note  In xbox's left axes -> E:-, W:+, S:-, N:+
-   *        In our definition   -> E:-, W:+, S:+, N:-
-   *        mapping joystick data to angle of hardware limitation
-   */
-  double mapping_joystick_to_bending_p();
-  double mapping_joystick_to_bending_t();
-  double mapping_joystick_to_forceps();
 
   /**
    * @author DY, JKim
@@ -129,17 +119,10 @@ private:
 
   /**
    * @author DY
-   * @brief joystick subscriber
-   */
-  sensor_msgs::msg::Joy joystick_msg_;
-  rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joystic_subscriber_;
-
-  /**
-   * @author DY
    * @brief target values publisher for operating motors
    */
-  MotorCommand kinematics_control_target_val_;
-  rclcpp::Publisher<MotorCommand>::SharedPtr kinematics_control_publisher_;
+  MotorCommand motor_control_target_val_;
+  rclcpp::Publisher<MotorCommand>::SharedPtr motor_control_publisher_;
 
   /**
    * @author DY
@@ -163,8 +146,6 @@ private:
   bool loadcell_op_flag_ = false;
   custom_interfaces::msg::LoadcellState loadcell_data_;
   rclcpp::Subscription<custom_interfaces::msg::LoadcellState>::SharedPtr loadcell_data_subscriber_;
-  // std_msgs::msg::Float32MultiArray loadcell_data_;
-  // rclcpp::Subscription<std_msgs::msg::Float32MultiArray>::SharedPtr loadcell_data_subscriber_;
 };
 
 #endif
