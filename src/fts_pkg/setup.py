@@ -21,7 +21,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'fts = fts_pkg.fts_read:main',
+            'fts_node = fts_pkg.fts_read:main',
             # 'fts2 = fts_pkg.fts.fts_read:main'
         ],
     },

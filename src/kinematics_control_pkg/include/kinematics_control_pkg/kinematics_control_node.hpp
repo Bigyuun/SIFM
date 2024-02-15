@@ -35,14 +35,16 @@
 #include <signal.h>
 #include <algorithm>
 #include <tuple>
+#include <cstdint>
+#include <stdexcept>
 
 // Surgical Tool Class
 #include "surgical_tool.hpp"
 #include "hw_definition.hpp"
 
 // ROS2
-#include <rclcpp/rclcpp.hpp>
-#include <rclcpp_action/rclcpp_action.hpp>
+#include "rclcpp/rclcpp.hpp"
+#include "rclcpp_action/rclcpp_action.hpp"
 #include "sensor_msgs/msg/joy.hpp"
 #include "std_msgs/msg/int32_multi_array.hpp"
 #include "std_msgs/msg/int32.hpp"
@@ -51,6 +53,8 @@
 #include "custom_interfaces/msg/motor_state.hpp"
 #include "custom_interfaces/msg/motor_command.hpp"
 #include "custom_interfaces/msg/loadcell_state.hpp"
+#include "custom_interfaces/srv/move_motor_direct.hpp"
+#include "custom_interfaces/srv/move_tool_angle.hpp"
 // #include "tcp_node.hpp"   // using #define NUM_OF_MOTRS
 
 typedef enum  {
@@ -65,6 +69,8 @@ class KinematicsControlNode : public rclcpp::Node
 public:
   using MotorState = custom_interfaces::msg::MotorState;
   using MotorCommand = custom_interfaces::msg::MotorCommand;
+  using MoveMotorDirect = custom_interfaces::srv::MoveMotorDirect;
+  using MoveToolAngle = custom_interfaces::srv::MoveToolAngle;
 
   /**
    * @brief Construct a new Kinematics Control Node object
@@ -89,7 +95,7 @@ public:
    * @param  actual position, actual_velocity and Controller(e.g. Xbox) input
    * @return target values
   */
-  void cal_kinematics();
+  void cal_kinematics(double pAngle, double tAngle, double gAngle);
 
   /**
    * @author DY
@@ -136,6 +142,10 @@ private:
    * @author DY
    * @brief kinematic info publisher
    */
+  float current_tilt_angle_ = 0; 
+  float current_pan_angle_ = 0; 
+  float current_grip_angle_ = 0; 
+
   geometry_msgs::msg::Twist surgical_tool_pose_;
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr surgical_tool_pose_publisher_;
 
@@ -146,6 +156,13 @@ private:
   bool loadcell_op_flag_ = false;
   custom_interfaces::msg::LoadcellState loadcell_data_;
   rclcpp::Subscription<custom_interfaces::msg::LoadcellState>::SharedPtr loadcell_data_subscriber_;
+
+  /**
+   * @author DY
+   * @brief Service server for motion
+   */
+  rclcpp::Service<MoveMotorDirect>::SharedPtr move_motor_direct_service_server_;
+  rclcpp::Service<MoveToolAngle>::SharedPtr move_tool_angle_service_server_;
 };
 
 #endif

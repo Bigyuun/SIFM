@@ -2,4 +2,4 @@
 # builtin_interfaces/Time stamp
 std_msgs/Header header
 float32[] stress
-float32[] voltage
+float32[] output_voltage

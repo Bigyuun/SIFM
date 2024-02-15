@@ -13,6 +13,7 @@
 //===============================
 // Motor Parameters
 //===============================
+#define OP_MODE             0x08  // CSP:0x08 CSV:0x09
 #define NUM_OF_MOTORS       2
 #define GEAR_RATIO_44       44
 #define GEAR_RATIO_3_9      3.9
@@ -27,7 +28,7 @@
  * @brief It means that the ETA(Estimation Time Arrive) is same for all motors (arrive at same time)
  *        If not use it, just each motors move same velocity (not arrive at same time)
 */
-#define MOTOR_CONTROL_SAME_DURATION 1
+#define MOTOR_CONTROL_SAME_DURATION 0
 #define PERCENT_100 100
 
 //===============================

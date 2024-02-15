@@ -26,6 +26,37 @@ include_directories(include
   "include/kinematics_control_pkg"
   "/opt/ros/hubmle/include"
   "../tcp_pkg/include/tcp_pkg"
+
+)
+
+add_executable(kinematics_control
+  src/main.cpp
+  src/kinematics_control_node.cpp
+  src/surgical_tool.cpp
+)
+ament_target_dependencies(kinematics_control
+  rclcpp
+  rclcpp_action
+  std_msgs
+  sensor_msgs
+  geometry_msgs
+  custom_interfaces
+)
+
+# DY
+# install
+install(TARGETS
+  kinematics_control
+  # homing_node
+  # joint_state_publisher
+  # broadcaster
+  # static_broadcaster
+  # listener
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+install(DIRECTORY launch # urdf rviz meshes param
+  DESTINATION share/${PROJECT_NAME}
 )
 
 if(BUILD_TESTING)

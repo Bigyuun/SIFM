@@ -1,3 +1,0 @@
-/**: # namespace and node name
-  ros__parameters:
-    robot_description: '$(xacro ../urdf/my_robot.urdf.xacro)'

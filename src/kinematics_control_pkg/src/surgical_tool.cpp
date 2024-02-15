@@ -42,7 +42,7 @@ std::tuple<double, double, double, double, double> SurgicalTool::get_bending_kin
 	double pAngle,
 	double tAngle,
 	double gAngle)
-{
+{	
 	// 1. set angle(degree) of continuum part
 	this->set_bending_angle(pAngle, tAngle);
 	// 2. set angle(degree) o forceps

@@ -26,7 +26,7 @@ find_package(custom_interfaces REQUIRED)
 
 include_directories("./include/tcp_pkg/"
                     "/opt/ros/humble/include"
-                    "../surgical_robot_control/include/surgical_robot_control/"
+                    "../kinematics_control_pkg/include/kinematics_control_pkg"
 )
 
 # DY

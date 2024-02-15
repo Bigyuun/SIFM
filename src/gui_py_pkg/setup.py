@@ -23,7 +23,9 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'gui_node = gui_py_pkg.gui_node:main'
+            'gui_node = gui_py_pkg.gui_node:main',
+            'rs_node = gui_py_pkg.rs_read:main',
+            'test = gui_py_pkg.push_test:main'
         ],
     },
 )

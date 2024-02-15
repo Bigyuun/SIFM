@@ -21,11 +21,10 @@ KinematicsControlNode::KinematicsControlNode(const rclcpp::NodeOptions & node_op
   this->motor_control_target_val_.target_position.resize(NUM_OF_MOTORS);
   this->motor_control_target_val_.target_velocity_profile.resize(NUM_OF_MOTORS);
   for(int i=0; i<NUM_OF_MOTORS; i++) {
-    this->kinematics_control_target_val_.target_velocity_profile[i] = PERCENT_100/2;
+    this->motor_control_target_val_.target_velocity_profile[i] = PERCENT_100/2;
   }
-  motor_control_publisher_ =
-    this->create_publisher<MotorCommand>("motor_command", QoS_RKL10V);
-  RCLCPP_INFO(this->get_logger(), "Publisher 'motor_command' is created.")
+  motor_control_publisher_ = this->create_publisher<MotorCommand>("motor_command", QoS_RKL10V);
+  RCLCPP_INFO(this->get_logger(), "Publisher 'motor_command' is created.");
   //===============================
   // surgical tool pose(degree) publisher
   //===============================
@@ -71,19 +70,99 @@ KinematicsControlNode::KinematicsControlNode(const rclcpp::NodeOptions & node_op
       QoS_RKL10V,
       [this] (const custom_interfaces::msg::LoadcellState::SharedPtr msg) -> void
       {
-        this->loadcell_op_flag_ = true;
-        this->loadcell_data_.header = msg->header;
-        this->loadcell_data_.stress = msg->stress;
-        this->loadcell_data_.output_voltage = msg->output_voltage;
-        RCLCPP_INFO_ONCE(this->get_logger(), "Subscribing the /loadcell_data.");
+        try {
+          this->loadcell_op_flag_ = true;
+          this->loadcell_data_.header = msg->header;
+          this->loadcell_data_.stress = msg->stress;
+          this->loadcell_data_.output_voltage = msg->output_voltage;
+          RCLCPP_INFO_ONCE(this->get_logger(), "Subscribing the /loadcell_data.");
+        } catch (const std::runtime_error & e) {
+          RCLCPP_WARN(this->get_logger(), "Error: %s", e.what());
+        }
+        
       }
     );
 
+
   /**
-   * @brief if use custom surgical tool, initialize.
+   * @brief service
    */
-  // STLeft_.init_surgicaltool(1,1,1,1);
-  // STRight_.init_surgicaltool(1,1,1,1);
+  auto get_target_move_motor_direct = 
+  [this](
+  const std::shared_ptr<MoveMotorDirect::Request> request,
+  std::shared_ptr<MoveMotorDirect::Response> response) -> void
+  {
+    try {
+      int32_t idx = request->index_motor;
+      int32_t target_position = request->target_position;
+      int32_t target_velocity_profile = request->target_velocity_profile;
+      // save the target values
+      for (int i=0; i<NUM_OF_MOTORS; i++) {
+        if(i == idx) {
+          this->motor_control_target_val_.target_position[i] = this->motor_state_.actual_position[i] + target_position;
+          this->motor_control_target_val_.target_velocity_profile[i] = target_velocity_profile;
+        } else {
+          this->motor_control_target_val_.target_position[i] = this->motor_state_.actual_position[i];
+          this->motor_control_target_val_.target_velocity_profile[i] = 100;
+        }
+      }
+
+      std::cout << target_position << std::endl;
+      std::cout << this->motor_state_.actual_position [0] << std::endl;
+      std::cout << this->motor_control_target_val_.target_position[0] << std::endl;
+
+      // publish and response for service from client
+      if(this->op_mode_ == kEnable) {
+        this->motor_control_publisher_->publish(this->motor_control_target_val_);
+        response->success = true;
+        RCLCPP_INFO(this->get_logger(), "Service <MoveMotorDirect> accept the request");
+      }
+      else response->success = false;
+
+    } catch (const std::exception & e) {
+      RCLCPP_WARN(this->get_logger(), "Error: %s", e.what());
+    }
+    
+  };
+  move_motor_direct_service_server_ = 
+    create_service<MoveMotorDirect>("kinematics/move_motor_direct", get_target_move_motor_direct);
+
+  auto get_target_move_tool_angle = 
+  [this](
+  const std::shared_ptr<MoveToolAngle::Request> request,
+  std::shared_ptr<MoveToolAngle::Response> response) -> void
+  {
+    try {
+      // run
+      if(this->op_mode_ == kEnable) {
+        if(request->mode == 0) {
+          // MOVE ABSOLUTELY
+          RCLCPP_INFO(this->get_logger(), "MODE: %d, tilt: %.2f, pan: %.2f, grip: %.2f", request->mode, request->tiltangle, request->panangle, request->gripangle);
+          this->cal_kinematics(request->panangle, request->tiltangle, request->gripangle);
+          this->motor_control_publisher_->publish(this->motor_control_target_val_);
+          this->surgical_tool_pose_publisher_->publish(this->surgical_tool_pose_);
+        }
+        else if (request->mode == 1) {
+          double pan_angle = this->current_pan_angle_ + request->panangle;
+          double tilt_angle = this->current_tilt_angle_ + request->tiltangle;
+          double grip_angle = this->current_grip_angle_ + request->gripangle;
+
+          RCLCPP_INFO(this->get_logger(), "MODE: %d, tilt: %.2f, pan: %.2f, grip: %.2f", request->mode, tilt_angle, pan_angle, grip_angle);
+          this->cal_kinematics(pan_angle, tilt_angle, grip_angle);
+          this->motor_control_publisher_->publish(this->motor_control_target_val_);
+          this->surgical_tool_pose_publisher_->publish(this->surgical_tool_pose_);
+        }
+        response->success = true;
+        RCLCPP_INFO(this->get_logger(), "Service <MoveToolAngle> accept the request");
+      }
+    } catch (const std::exception & e) {
+      RCLCPP_WARN(this->get_logger(), "Error: %s", e.what());
+    }
+    
+  };
+  move_tool_angle_service_server_ = 
+    create_service<MoveToolAngle>("kinematics/move_tool_angle", get_target_move_tool_angle);
+
 
   /**
    * @brief homing
@@ -95,16 +174,23 @@ KinematicsControlNode::~KinematicsControlNode() {
 
 }
 
-void KinematicsControlNode::cal_kinematics() {
+void KinematicsControlNode::cal_kinematics(double pAngle, double tAngle, double gAngle) {
   /* code */
   /* input : actual pos & actual velocity & controller input */
   /* output : target value*/
+
+  this->current_pan_angle_ = pAngle;
+  this->current_tilt_angle_ = tAngle;
+  this->current_grip_angle_ = gAngle;
   this->surgical_tool_pose_.angular.y = tAngle * M_PI/180;
   this->surgical_tool_pose_.angular.z = pAngle * M_PI/180;
+  this->ST_.get_bending_kinematic_result(this->current_pan_angle_, this->current_tilt_angle_, this->current_grip_angle_);
+  
+  // std::cout << this->current_pan_angle_ << std::endl;
+  // std::cout << this->current_tilt_angle_ << std::endl;
+  // std::cout << this->current_grip_angle_ << std::endl;
 
-  this->ST_.get_bending_kinematic_result(pAngle, tAngle, gAngle);
-
-  double f_val[DOF];
+  double f_val[5];
   f_val[0] = this->ST_.wrLengthEast_;
   f_val[1] = this->ST_.wrLengthWest_;
   f_val[2] = this->ST_.wrLengthSouth_;
@@ -117,53 +203,43 @@ void KinematicsControlNode::cal_kinematics() {
   // std::cout << "North : " << f_val[3] << " mm" << std::endl;
   // std::cout << "Grip  : " << f_val[4] << " mm" << std::endl;
 
-  // ratio conversion & Check Threshold of loadcell
-  // In ROS2, there is no function of finding max(or min) value
-  // for (int i=0; i<DOF; i++) {
-  //   if (this->loadcell_data_.data[i] >= this->loadcell_data_.threshold[i]) {
-  //     RCLCPP_WARN(
-  //       this->get_logger(),
-  //       "#%d Loadcell is %.2fg. Upper than %.2fg Threshold.",
-  //       i, this->loadcell_data_.data[i], this->loadcell_data_.threshold[i]);
-  //   }
-  // }
-
-  this->kinematics_control_target_val_.header.stamp = this->now();
-  this->kinematics_control_target_val_.header.frame_id = "kinematic_target_values";
-  this->kinematics_control_target_val_.target_position[0] = this->virtual_home_pos_[0]
+  this->motor_control_target_val_.header.stamp = this->now();
+  this->motor_control_target_val_.header.frame_id = "kinematics_motor_target_position";
+  this->motor_control_target_val_.target_position[0] = this->virtual_home_pos_[0]
                                                             + DIRECTION_COUPLER * f_val[0] * gear_encoder_ratio_conversion(GEAR_RATIO_44, ENCODER_CHANNEL, ENCODER_RESOLUTION);
-  this->kinematics_control_target_val_.target_position[1] = this->virtual_home_pos_[1]
+  this->motor_control_target_val_.target_position[1] = this->virtual_home_pos_[1]
                                                             + DIRECTION_COUPLER * f_val[1] * gear_encoder_ratio_conversion(GEAR_RATIO_44, ENCODER_CHANNEL, ENCODER_RESOLUTION);
-  this->kinematics_control_target_val_.target_position[2] = this->virtual_home_pos_[2]
-                                                            + DIRECTION_COUPLER * f_val[2] * gear_encoder_ratio_conversion(GEAR_RATIO_44, ENCODER_CHANNEL, ENCODER_RESOLUTION);
-  this->kinematics_control_target_val_.target_position[3] = this->virtual_home_pos_[3]
-                                                            + DIRECTION_COUPLER * f_val[3] * gear_encoder_ratio_conversion(GEAR_RATIO_44, ENCODER_CHANNEL, ENCODER_RESOLUTION);
-  this->kinematics_control_target_val_.target_position[4] = this->virtual_home_pos_[4]
-                                                            + DIRECTION_COUPLER * f_val[4] * gear_encoder_ratio_conversion(GEAR_RATIO_3_9, ENCODER_CHANNEL, ENCODER_RESOLUTION);
+  // this->motor_control_target_val_.target_position[2] = this->virtual_home_pos_[2]
+  //                                                           + DIRECTION_COUPLER * f_val[2] * gear_encoder_ratio_conversion(GEAR_RATIO_44, ENCODER_CHANNEL, ENCODER_RESOLUTION);
+  // this->motor_control_target_val_.target_position[3] = this->virtual_home_pos_[3]
+  //                                                           + DIRECTION_COUPLER * f_val[3] * gear_encoder_ratio_conversion(GEAR_RATIO_44, ENCODER_CHANNEL, ENCODER_RESOLUTION);
+  // this->motor_control_target_val_.target_position[4] = this->virtual_home_pos_[4]
+  //                                                           + DIRECTION_COUPLER * f_val[4] * gear_encoder_ratio_conversion(GEAR_RATIO_3_9, ENCODER_CHANNEL, ENCODER_RESOLUTION);
 
-#if MOTOR_CONTROL_SAME_DURATION
-  /**
-   * @brief find max value and make it max_velocity_profile 100 (%),
-   *        other value have values proportional to 100 (%) each
-   */
-  static double prev_f_val[DOF];  // for delta length
+// #if MOTOR_CONTROL_SAME_DURATION
+//   /**
+//    * @brief find max value and make it max_velocity_profile 100 (%),
+//    *        other value have values proportional to 100 (%) each
+//    */
+//   static double prev_f_val[NUM_OF_MOTORS];  // for delta length
 
-  std::vector<double> abs_f_val(DOF-1, 0);  // 5th DOF is a forceps
-  for (int i=0; i<DOF-1; i++) { abs_f_val[i] = std::abs(this->kinematics_control_target_val_.target_position[i] - this->motor_state_.actual_position[i]); }
+//   std::vector<double> abs_f_val(NUM_OF_MOTORS-1, 0);  // 5th DOF is a forceps
+//   for (int i=0; i<NUM_OF_MOTORS-1; i++) { abs_f_val[i] = std::abs(this->motor_control_target_val_.target_position[i] - this->motor_state_.actual_position[i]); }
 
-  double max_val = *std::max_element(abs_f_val.begin(), abs_f_val.end()) + 0.00001; // 0.00001 is protection for 0/0 (0 divided by 0)
-  int max_val_index = std::max_element(abs_f_val.begin(), abs_f_val.end()) - abs_f_val.begin();
-  for (int i=0; i<(DOF-1); i++) { 
-    this->kinematics_control_target_val_.target_velocity_profile[i] = (abs_f_val[i] / max_val) * PERCENT_100;
-  }
-  // last index means forceps. It doesn't need velocity profile
-  this->kinematics_control_target_val_.target_velocity_profile[DOF-1] = PERCENT_100;
+//   double max_val = *std::max_element(abs_f_val.begin(), abs_f_val.end()) + 0.00001; // 0.00001 is protection for 0/0 (0 divided by 0)
+//   int max_val_index = std::max_element(abs_f_val.begin(), abs_f_val.end()) - abs_f_val.begin();
+//   for (int i=0; i<(NUM_OF_MOTORS-1); i++) { 
+//     this->motor_control_target_val_.target_velocity_profile[i] = (abs_f_val[i] / max_val) * PERCENT_100;
+//   }
+//   // last index means forceps. It doesn't need velocity profile
+//   this->motor_control_target_val_.target_velocity_profile[NUM_OF_MOTORS-1] = PERCENT_100;
   
-#else
-  for (int i=0; i<DOF; i++) { 
-    this->kinematics_control_target_val_.target_velocity_profile[i] = PERCENT_100;
-  }
-#endif
+// #else
+//   for (int i=0; i<NUM_OF_MOTORS; i++) { 
+//     this->motor_control_target_val_.target_velocity_profile[i] = PERCENT_100;
+//   }
+// #endif
+  std::cout << "fin" <<std::endl;
 }
 
 double KinematicsControlNode::gear_encoder_ratio_conversion(double gear_ratio, int e_channel, int e_resolution) {
