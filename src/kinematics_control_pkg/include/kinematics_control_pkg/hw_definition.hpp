@@ -35,7 +35,7 @@
 // Continuum Manipulator Paremeters
 //===============================
 #define DOF               1     // Degree of freedom
-#define NUM_OF_JOINT      5     // ea
+#define NUM_OF_JOINT      8     // ea
 #define SEGMENT_ARC       6.92  // mm
 #define SEGMENT_DIAMETER  3     // mm
 #define WIRE_DISTANCE     0.9   // mm

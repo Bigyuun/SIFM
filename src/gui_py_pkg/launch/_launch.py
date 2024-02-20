@@ -12,17 +12,25 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-  
+
+import launch
 from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration, Command, ThisLaunchFileDir
 from launch_ros.actions import Node
+from ament_index_python.packages import get_package_share_directory
+from launch_ros.substitutions import FindPackageShare
+import os
+import xacro
+from launch_ros.descriptions import ParameterValue
 
 def generate_launch_description():
+    
     return LaunchDescription([
         Node(
-            package='tcp_pkg',
-            executable='demo_node',
-            name='demo_node',
+            package='gui_py_pkg',
+            executable='gui_node',
+            name='gui_node',
             output='screen',
         ),
     ])
-
