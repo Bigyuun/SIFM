@@ -66,7 +66,7 @@ KinematicsControlNode::KinematicsControlNode(const rclcpp::NodeOptions & node_op
   //===============================
   loadcell_data_subscriber_ =
     this->create_subscription<custom_interfaces::msg::LoadcellState>(
-      "loadcell_data",
+      "loadcell_state",
       QoS_RKL10V,
       [this] (const custom_interfaces::msg::LoadcellState::SharedPtr msg) -> void
       {

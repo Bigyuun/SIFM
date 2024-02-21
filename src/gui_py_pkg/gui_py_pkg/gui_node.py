@@ -19,6 +19,7 @@ from rclpy.node import Node
 
 from std_msgs.msg import String
 from geometry_msgs.msg import WrenchStamped
+from custom_interfaces.msg import LoadcellState
 from custom_interfaces.msg import MotorCommand
 from custom_interfaces.msg import MotorState
 from custom_interfaces.srv import MoveMotorDirect
@@ -76,6 +77,15 @@ class GUINode(Node, QObject):
         )
         self.get_logger().info('fts_data subscriber is created.')
 
+        self.loadcell_data = LoadcellState()
+        self.fts_subscriber = self.create_subscription(
+            LoadcellState,
+            'loadcell_state',
+            self.read_loadcell_data,
+            QOS_RKL10V
+        )
+        self.get_logger().info('fts_data subscriber is created.')
+
         self.motor_state = MotorState()
         self.motor_state_subscriber = self.create_subscription(
             MotorState,
@@ -126,6 +136,9 @@ class GUINode(Node, QObject):
         self.fts_data_flag = True
         # self.data_received_signal.emit(True)     # DY
         self.fts_data = msg
+
+    def read_loadcell_data(self, msg):
+        self.loadcell_data = msg
 
     def read_motor_state(self, msg):
         self.motor_state = msg
@@ -190,6 +203,7 @@ class MyGUI(QWidget):
 
         self.init_motor_ui()
         self.init_fts_ui()
+        self.init_loadcell_ui()
         self.init_fts_plot()
         self.init_timer()
 
@@ -328,6 +342,29 @@ class MyGUI(QWidget):
 
         list(map(lambda x: x.setReadOnly(True), self.fts_sub_line_edit_list))
 
+    def init_loadcell_ui(self):
+        '''
+        @ autor DY
+        @ note force-torque sensor list for monitoring
+        '''
+        self.lc_sub_label_list = []
+        self.lc_sub_line_edit_list = []
+        self.lc_sub_layout_list = []
+        self.lc_sub_label_list.append(QLabel('loadcell #1 weight(kg)'))
+        self.lc_sub_label_list.append(QLabel('loadcell #2 weight(kg)'))
+
+        for i in range (len(self.lc_sub_label_list)):  # 6 (force 3d, torque 3d)
+            try:
+                self.lc_sub_layout_list.append(QHBoxLayout())
+                self.lc_sub_line_edit_list.append(QLineEdit('NAN'))
+                self.lc_sub_layout_list[i].addWidget(self.lc_sub_label_list[i])
+                self.lc_sub_layout_list[i].addWidget(self.lc_sub_line_edit_list[i])
+                self.layout_global.addLayout(self.lc_sub_layout_list[i])
+            finally:
+                pass
+
+        list(map(lambda x: x.setReadOnly(True), self.lc_sub_line_edit_list))
+
 
     def init_timer(self):
         '''
@@ -346,6 +383,11 @@ class MyGUI(QWidget):
             self.timer_fts = QTimer(self)
             self.timer_fts.timeout.connect(self.update_fts)
             self.timer_fts.start(33)
+
+            # fts_data update
+            self.timer_loadcell = QTimer(self)
+            self.timer_loadcell.timeout.connect(self.update_loadcell)
+            self.timer_loadcell.start(33)
 
             # ros node
             self.timer_ros_node = QTimer(self)
@@ -468,6 +510,15 @@ class MyGUI(QWidget):
             self.fts_sub_line_edit_list[5].setText(str(self.node.fts_data.wrench.torque.z))
         except Exception as e:
             self.node.get_logger().warning(f'F:update_fts() -> {e}')
+
+        return 1
+    
+    def update_loadcell(self):
+        try:
+            self.lc_sub_line_edit_list[0].setText(str(self.node.loadcell_data.stress[0]))
+            self.lc_sub_line_edit_list[1].setText(str(self.node.loadcell_data.stress[1]))
+        except Exception as e:
+            self.node.get_logger().warning(f'F:update_loadcell() -> {e}')
 
         return 1
     

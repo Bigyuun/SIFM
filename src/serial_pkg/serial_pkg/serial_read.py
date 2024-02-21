@@ -1,6 +1,6 @@
 import serial
 import time
-
+import os
 
 import rclpy
 from rclpy.node import Node
@@ -15,19 +15,17 @@ from rcl_interfaces.msg import SetParametersResult
 
 from std_msgs.msg import Header
 from geometry_msgs.msg import WrenchStamped
-from custom_interfaces.msg import MotorCommand
-
-import os
+from custom_interfaces.msg import LoadcellState
 
 usb_device_path = "/dev/ttyACM0"  # USB 장치의 경로에 맞게 변경하세요
 
 # USB 장치에 대한 권한 변경 명령어
 command = f"sudo chmod 666 {usb_device_path}"
 
-class FTS(Node):
+class SerialNode(Node):
 
     def __init__(self):
-        super().__init__('fts')
+        super().__init__('serial_node')
         self.declare_parameter('qos_depth', 10)
         qos_depth = self.get_parameter('qos_depth').value
         # self.declare_parameter('')
@@ -45,6 +43,12 @@ class FTS(Node):
             'fts_data_raw',
             QOS_RKL10V
         )
+        
+        self.loadcell_publisher = self.create_publisher(
+            LoadcellState,
+            'loadcell_state',
+            QOS_RKL10V
+        )
 
         self.serial_port = '/dev/ttyACM0'  # 사용하는 시리얼 포트(COM 포트)를 지정하세요.
         self.baudrate = 115200  # 아두이노와 통신하는 속도
@@ -52,12 +56,12 @@ class FTS(Node):
         # self.force3d = list()   # empty list
         self.force3d = [0 for i in range(3)]   # empty list [0, 0, 0]
         self.torque3d = [0 for i in range(3)]   # empty list [0, 0, 0]
-        
+        self.loadcell_weight = [0 for i in range(2)]
     # def update_parameter(self, params):
     #     for param in params:
     #         if param.name = 
         
-        self.get_logger().info('fts node is up.')
+        self.get_logger().info('serial node is up.')
         self.read_serial_data(self.serial_port, self.baudrate)
 
     def publishall(self):
@@ -70,8 +74,16 @@ class FTS(Node):
         msg.wrench.torque.x = self.torque3d[0]
         msg.wrench.torque.y = self.torque3d[1]
         msg.wrench.torque.z = self.torque3d[2]
-
         self.fts_publisher.publish(msg)
+
+        msg = LoadcellState()
+        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.header.frame_id = 'loadcell'
+        msg.stress.append(self.loadcell_weight[0])
+        msg.stress.append(self.loadcell_weight[1])
+        # msg.output_voltage = self.loadcell_weight[1]
+
+        self.loadcell_publisher.publish(msg)
         
     def read_serial_data(self, serial_port, baudrate):
         ser = serial.Serial(serial_port, baudrate, timeout=1)
@@ -88,6 +100,7 @@ class FTS(Node):
 
                 # 수신된 데이터가 비어있지 않으면 출력
                 if serial_data:
+                    # print(serial_data)
                     parsing_data = self.parse_serial_data(serial_data)
                     if parsing_data == None:
                         continue
@@ -95,6 +108,7 @@ class FTS(Node):
                         try:
                             self.force3d = parsing_data[0:3]
                             self.torque3d = parsing_data[3:6]
+                            self.loadcell_weight = parsing_data[6:8]
                             self.publishall()
                         except ValueError:
                             self.get_logger().warning('Error while convert string to float')
@@ -128,13 +142,13 @@ class FTS(Node):
 def main(args=None):
     rclpy.init(args=args)
     try:
-        fts = FTS()
+        serial_node = SerialNode()
         try:
-            rclpy.spin(fts)
+            rclpy.spin(serial_node)
         except KeyboardInterrupt:
-            fts.get_logger().info('Keyboard Interrupt (SIGINT)')
+            serial_node.get_logger().info('Keyboard Interrupt (SIGINT)')
         finally:
-            fts.destroy_node()
+            serial_node.destroy_node()
     finally:
         rclpy.shutdown()
 

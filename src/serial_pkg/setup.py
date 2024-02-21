@@ -2,13 +2,12 @@ from setuptools import find_packages, setup
 import glob
 import os
 
-package_name = 'fts_pkg'
+package_name = 'serial_pkg'
 
 setup(
     name=package_name,
-    version='0.1.0',
-    # packages=find_packages(exclude=['test']),
-    packages=['fts_pkg', 'fts_pkg/fts'],
+    version='0.0.0',
+    packages=find_packages(exclude=['test']),
     data_files=[
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
@@ -19,12 +18,12 @@ setup(
     zip_safe=True,
     maintainer='daeyun',
     maintainer_email='bigyun9375@gmail.com',
-    description='Force Torque Sensor package',
-    license='Apache License 2.0',
+    description='serial-read-package-for-forcesensor-and-loadcell-indicater',
+    license='Apache-2.0',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'fts_node = fts_pkg.fts_read:main',
+            'serial_read = serial_pkg.serial_read:main'
         ],
     },
 )

@@ -25,9 +25,13 @@ def generate_launch_description():
   
   return LaunchDescription([
     
+    # IncludeLaunchDescription(
+    #   PythonLaunchDescriptionSource(
+    #     [get_package_share_directory('fts_pkg'), '/launch/_launch.py']),
+    # ),
     IncludeLaunchDescription(
       PythonLaunchDescriptionSource(
-        [get_package_share_directory('fts_pkg'), '/launch/_launch.py']),
+        [get_package_share_directory('serial_pkg'), '/launch/_launch.py']),
     ),
     IncludeLaunchDescription(
       PythonLaunchDescriptionSource(
