@@ -100,13 +100,13 @@ class GUINode(Node, QObject):
 
         # self.realsense_subscriber = RealSenseSubscriber()
         # color rectified image. RGB format
-        self.br_rgb = CvBridge()
-        self.color_image_rect_raw_subscriber = self.create_subscription(
-            Image,
-            "camera/color/image_rect_raw",
-            self.color_image_rect_raw_callback,
-            QOS_RKL10V)
-        self.get_logger().info('realsense-camera subscriber is created.')
+        # self.br_rgb = CvBridge()
+        # self.color_image_rect_raw_subscriber = self.create_subscription(
+        #     Image,
+        #     "camera/color/image_rect_raw",
+        #     self.color_image_rect_raw_callback,
+        #     QOS_RKL10V)
+        # self.get_logger().info('realsense-camera subscriber is created.')
 
         self.move_motor_direct_service_client = self.create_client(
             MoveMotorDirect,

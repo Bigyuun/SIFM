@@ -33,4 +33,10 @@ def generate_launch_description():
             name='gui_node',
             output='screen',
         ),
+        Node(
+            package='gui_py_pkg',
+            executable='rs_node',
+            name='rs_node',
+            output='screen'
+        )
     ])

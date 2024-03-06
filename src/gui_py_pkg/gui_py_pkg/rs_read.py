@@ -66,7 +66,7 @@ class RealSenseSubscriber(Node):
     return
 
   def color_image_rect_raw_callback(self, data):
-    self.get_logger().info("Receiving RGB frame")
+    # self.get_logger().info("Receiving RGB frame")
     current_frame = self.br_rgb.imgmsg_to_cv2(data, 'bgr8')
     cv2.imshow("rgb", current_frame)
     cv2.waitKey(1)
