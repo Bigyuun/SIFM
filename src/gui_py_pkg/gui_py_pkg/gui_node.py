@@ -19,6 +19,7 @@ from rclpy.node import Node
 
 from std_msgs.msg import String
 from geometry_msgs.msg import WrenchStamped
+from std_srvs.srv import SetBool
 from custom_interfaces.msg import LoadcellState
 from custom_interfaces.msg import MotorCommand
 from custom_interfaces.msg import MotorState
@@ -84,7 +85,7 @@ class GUINode(Node, QObject):
             self.read_loadcell_data,
             QOS_RKL10V
         )
-        self.get_logger().info('fts_data subscriber is created.')
+        self.get_logger().info('loadcell_state subscriber is created.')
 
         self.motor_state = MotorState()
         self.motor_state_subscriber = self.create_subscription(
@@ -121,6 +122,13 @@ class GUINode(Node, QObject):
         )
         while not self.move_tool_angle_service_client.wait_for_service(timeout_sec=2.0):
             self.get_logger().warning('The "/kinematics/move_tool_angle" service server not available. Check the kinematics_control_node')
+
+        self.recoder_service_client = self.create_client(
+            SetBool,
+            '/data/record'
+        )
+        while not self.recoder_service_client.wait_for_service(timeout_sec=2.0):
+            self.get_logger().warning('The "data/recode" service server not available. Check the kinematics_control_node')
 
     ### ================================================================
     ### Functions
@@ -165,6 +173,20 @@ class GUINode(Node, QObject):
         future = self.move_tool_angle_service_client.call_async(service_request)
         # rclpy.spin_until_future_complete(self, future)
         return future.result()
+    
+    def send_request_record_start(self):
+        service_request = SetBool.Request()
+        service_request.data = True
+        future = self.recoder_service_client.call_async(service_request)
+        # rclpy.spin_until_future_complete(self, future)
+        return future.result()
+    
+    def send_request_record_stop(self):
+        service_request = SetBool.Request()
+        service_request.data = False
+        future = self.recoder_service_client.call_async(service_request)
+        # rclpy.spin_until_future_complete(self, future)
+        return future.result()
 
     def receive_signal_handler(self, data):
         print(data)
@@ -196,16 +218,56 @@ class GUINode(Node, QObject):
 
 class MyGUI(QWidget):
     def __init__(self, node):
+        """_summary_
+
+        Args:
+            node (_type_): _description_
+        """
         super().__init__()
         
         self.node = node
         self.layout_global = QVBoxLayout()
 
+        self.init_recorder_ui()
         self.init_motor_ui()
         self.init_fts_ui()
         self.init_loadcell_ui()
         self.init_fts_plot()
         self.init_timer()
+
+    def init_recorder_ui(self):
+        self.record_layout = QVBoxLayout()
+        self.record_label = QLabel('Recording')
+        self.record_button = QPushButton('Record')
+        self.record_button.setStyleSheet('QPushButton {color: green;}')  # 초록색으로 변경
+        self.record_button.clicked.connect(self.toggle_record)
+        self.record_button.setFixedWidth(200)
+        self.record_button.setFixedHeight(50)
+        self.record_layout.addWidget(self.record_button)
+        self.layout_global.addLayout(self.record_layout)
+
+        self.is_recording = False
+        pass
+
+    def toggle_record(self):
+        if self.is_recording:
+            self.stop_recording()
+        else:
+            self.start_recording()
+
+    def start_recording(self):
+        self.record_button.setText('Stop')
+        self.record_button.setStyleSheet('QPushButton {color: red;}')  # 빨간색으로 변경
+        self.is_recording = True
+        response = self.node.send_request_record_start()
+        print(response.message)
+
+    def stop_recording(self):
+        self.record_button.setText('Record')
+        self.record_button.setStyleSheet('QPushButton {color: green;}')  # 초록색으로 변경
+        self.is_recording = False
+        response = self.node.send_request_record_stop()
+        print(response.message)
 
     def init_motor_ui(self):
         '''
@@ -249,12 +311,33 @@ class MyGUI(QWidget):
             self.motor_pub_line_edit_list.append(QLineEdit('0'))
             self.motor_pub_button_list.append(QPushButton('Publish'))
 
-            # @ note  if you input 'i' into argument of function 'request_kinematics_move' directly,
+            # @ note  if you input 'i' into argument of function 'request_motor_move' directly,
             #         then all button will work about num=2, in this case
-            if i == 0:
-                self.motor_pub_button_list[i].clicked.connect(lambda : self.request_kinematics_move(num=0))
-            elif i == 1:
-                self.motor_pub_button_list[i].clicked.connect(lambda : self.request_kinematics_move(num=1))
+            try:
+                if i == 0:
+                    self.motor_pub_button_list[i].clicked.connect(lambda : self.request_motor_move(num=0))
+                elif i == 1:
+                    self.motor_pub_button_list[i].clicked.connect(lambda : self.request_motor_move(num=1))
+                elif i == 2:
+                    self.motor_pub_button_list[i].clicked.connect(lambda : self.request_motor_move(num=2))
+                elif i == 3:
+                    self.motor_pub_button_list[i].clicked.connect(lambda : self.request_motor_move(num=3))
+                elif i == 4:
+                    self.motor_pub_button_list[i].clicked.connect(lambda : self.request_motor_move(num=4))
+                elif i == 5:
+                    self.motor_pub_button_list[i].clicked.connect(lambda : self.request_motor_move(num=5))
+                elif i == 6:
+                    self.motor_pub_button_list[i].clicked.connect(lambda : self.request_motor_move(num=6))
+                elif i == 7:
+                    self.motor_pub_button_list[i].clicked.connect(lambda : self.request_motor_move(num=7))
+                elif i == 8:
+                    self.motor_pub_button_list[i].clicked.connect(lambda : self.request_motor_move(num=8))
+                elif i == 9:
+                    self.motor_pub_button_list[i].clicked.connect(lambda : self.request_motor_move(num=8))
+            except Exception as e:
+                print(f'Exception error on connecting functions to button as {e}')
+        
+
 
         # @autor DY
         # lambda F for apply the funtion to all the list arugments)
@@ -298,21 +381,50 @@ class MyGUI(QWidget):
         self.layout_amode.setAlignment(self.checkbox_amode_list[0], Qt.AlignRight)
         self.layout_amode.setAlignment(self.checkbox_amode_list[1], Qt.AlignRight)
         self.layout_global.addLayout(self.layout_amode)
+        
+        self.motor_kinematics_layout = QVBoxLayout()
+        self.motor_kinematics_label_list = []
+        self.motor_kinematics_label_list.append(QLabel("Move Tip(Degree) | Tilt(E-W)"))
+        self.motor_kinematics_label_list.append(QLabel("Move Tip(Degree) | Pan (S-N)"))
 
-        self.motor_kinematics_label = QLabel("Move Tip(Degree)")
-        self.motor_kinematics_line_edit = QLineEdit('0')
+        self.motor_kinematics_line_edit_list = []
+        self.motor_kinematics_layout_list = []
+        for i in range (len(self.motor_kinematics_label_list)):  # 6 (force 3d, torque 3d)
+            try:
+                self.motor_kinematics_layout_list.append(QHBoxLayout())
+                self.motor_kinematics_line_edit_list.append(QLineEdit('0'))
+                self.motor_kinematics_layout_list[i].addWidget(self.motor_kinematics_label_list[i])
+                self.motor_kinematics_layout_list[i].addWidget(self.motor_kinematics_line_edit_list[i])
+                self.motor_kinematics_layout.addLayout(self.motor_kinematics_layout_list[i])
+            finally:
+                pass
+        list(map(lambda x: x.setAlignment(Qt.AlignVCenter | Qt.AlignRight), self.motor_kinematics_label_list))        
+        list(map(lambda x: x.setFixedWidth(100), self.motor_kinematics_line_edit_list))
+        list(map(lambda x: x.setFixedHeight(30), self.motor_kinematics_line_edit_list))
         self.motor_kinematics_button = QPushButton('Publish')
-        self.motor_kinematics_button.clicked.connect(self.request_kinematics_move)
-        self.motor_kinematics_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
+        self.motor_kinematics_button.clicked.connect(self.request_motor_move)
         self.motor_kinematics_button.setFixedWidth(150)
-        self.motor_kinematics_button.setFixedHeight(30)
-        self.motor_kinematics_line_edit.setFixedWidth(100)
-        self.motor_kinematics_line_edit.setFixedHeight(30)
+        self.motor_kinematics_button.setFixedHeight(70)
 
-        self.motor_kinematics_layout = QHBoxLayout()
-        self.motor_kinematics_layout.addWidget(self.motor_kinematics_label)
-        self.motor_kinematics_layout.addWidget(self.motor_kinematics_line_edit)
-        self.motor_kinematics_layout.addWidget(self.motor_kinematics_button)
+        self.motor_kinematics_layout_fin = QHBoxLayout()
+        self.motor_kinematics_layout_fin.addLayout(self.motor_kinematics_layout)
+        self.motor_kinematics_layout_fin.addWidget(self.motor_kinematics_button)
+        self.layout_global.addLayout(self.motor_kinematics_layout_fin)
+
+        # self.motor_kinematics_label = QLabel("Move Tip(Degree) | Tilt")
+        # self.motor_kinematics_line_edit = QLineEdit('0')
+        # self.motor_kinematics_button = QPushButton('Publish')
+        # self.motor_kinematics_button.clicked.connect(self.request_motor_move)
+        # self.motor_kinematics_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
+        # self.motor_kinematics_button.setFixedWidth(150)
+        # self.motor_kinematics_button.setFixedHeight(30)
+        # self.motor_kinematics_line_edit.setFixedWidth(100)
+        # self.motor_kinematics_line_edit.setFixedHeight(30)
+
+        # self.motor_kinematics_layout = QHBoxLayout()
+        # self.motor_kinematics_layout.addWidget(self.motor_kinematics_label)
+        # self.motor_kinematics_layout.addWidget(self.motor_kinematics_line_edit)
+        # self.motor_kinematics_layout.addWidget(self.motor_kinematics_button)
         self.layout_global.addLayout(self.motor_kinematics_layout)
 
     def init_fts_ui(self):
@@ -457,10 +569,10 @@ class MyGUI(QWidget):
         line_edit = QLineEdit(f"{line_edit_text}")
         pass
 
-    def request_kinematics_move(self, num=0):
+    def request_motor_move(self, num=0):
         try:
             if len(self.node.motor_state.actual_position) ==0:
-                self.node.get_logger().warning(f'command val : {cmd_val}')
+                # self.node.get_logger().warning(f'command val : {cmd_val}')
                 self.node.get_logger().warning(f'motor_state does not exit. Check the connection')
                 return
             else:
@@ -479,13 +591,17 @@ class MyGUI(QWidget):
                     # Calculate the encoder value from the degree of surgical tool target
 
                     if self.checkbox_amode_list[0].isChecked(): # Absolute
-                        response = self.node.send_request_move_tool_angle(pan=float(self.motor_kinematics_line_edit.text()), mode=0)
+                        response = self.node.send_request_move_tool_angle(pan=float(self.motor_kinematics_line_edit_list[0].text()),
+                                                                          tilt=float(self.motor_kinematics_line_edit_list[1].text()),
+                                                                          mode=0)
                     elif self.checkbox_amode_list[1].isChecked():
-                        response = self.node.send_request_move_tool_angle(pan=float(self.motor_kinematics_line_edit.text()), mode=1)
+                        response = self.node.send_request_move_tool_angle(pan=float(self.motor_kinematics_line_edit_list[0].text()),
+                                                                          tilt=float(self.motor_kinematics_line_edit_list[1].text()),
+                                                                          mode=1)
 
                 
         except Exception as e:
-            self.node.get_logger().warning(f'F:request_kinematics_move() -> {e}')
+            self.node.get_logger().warning(f'F:request_motor_move() -> {e}')
             return
 
     def node_spin_once(self):
@@ -553,6 +669,7 @@ class MyGUI(QWidget):
     
 
 def main():
+
     rclpy.init(args=None)
     node = GUINode()
     app = QApplication(sys.argv)
