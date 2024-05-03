@@ -32,5 +32,6 @@ def generate_launch_description():
             executable='gui_node',
             name='gui_node',
             output='screen',
+            prefix='taskset -c 2 3'
         ),
     ])

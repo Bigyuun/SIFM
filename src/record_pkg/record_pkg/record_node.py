@@ -182,6 +182,7 @@ class RecordNode(Node):
                 self.csv_file.close()
                 response.success = True
                 response.message = 'Stop Recording.'
+                self.data_count = 0
         except Exception as e:
             print(f'Exception Error as {e}')
             response.success = False
@@ -209,14 +210,16 @@ class RecordNode(Node):
         """
         # self.get_logger().info("Receiving RGB frame")
         self.image_flag = True
-        self.data_count += 1
         self.capture_time = data.header.stamp
         self.current_frame = self.br_rgb.imgmsg_to_cv2(data, 'bgr8')
 
         if self.is_recording:
+            self.data_count += 1
             cv2.imwrite(self.directory_path_image + '/' + str(self.data_count) +'.png', self.current_frame)
             self.update_csv()
 
+        cv2.imshow("[Record Node] rgb", self.current_frame)
+        cv2.waitKey(1)
         # if self.is_recording:
         #     self.rosbag_writer.write(
         #     'camera/color/image_rect_raw',

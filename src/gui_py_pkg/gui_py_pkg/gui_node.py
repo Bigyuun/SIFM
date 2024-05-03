@@ -101,13 +101,13 @@ class GUINode(Node, QObject):
 
         # self.realsense_subscriber = RealSenseSubscriber()
         # color rectified image. RGB format
-        self.br_rgb = CvBridge()
-        self.color_image_rect_raw_subscriber = self.create_subscription(
-            Image,
-            "camera/color/image_rect_raw",
-            self.color_image_rect_raw_callback,
-            QOS_RKL10V)
-        self.get_logger().info('realsense-camera subscriber is created.')
+        # self.br_rgb = CvBridge()
+        # self.color_image_rect_raw_subscriber = self.create_subscription(
+        #     Image,
+        #     "camera/color/image_rect_raw",
+        #     self.color_image_rect_raw_callback,
+        #     QOS_RKL10V)
+        # self.get_logger().info('realsense-camera subscriber is created.')
 
         self.move_motor_direct_service_client = self.create_client(
             MoveMotorDirect,
@@ -133,12 +133,12 @@ class GUINode(Node, QObject):
     ### ================================================================
     ### Functions
     ### ================================================================
-    def color_image_rect_raw_callback(self, data):
-        # self.get_logger().info("Receiving RGB frame")
-        current_frame = self.br_rgb.imgmsg_to_cv2(data, 'bgr8')
-        cv2.imshow("rgb", current_frame)
-        cv2.waitKey(1)
-        return
+    # def color_image_rect_raw_callback(self, data):
+    #     # self.get_logger().info("Receiving RGB frame")
+    #     current_frame = self.br_rgb.imgmsg_to_cv2(data, 'bgr8')
+    #     cv2.imshow("[GUI Node] rgb", current_frame)
+    #     cv2.waitKey(1)
+    #     # return
 
     def read_fts_data(self, msg):
         self.fts_data_flag = True
