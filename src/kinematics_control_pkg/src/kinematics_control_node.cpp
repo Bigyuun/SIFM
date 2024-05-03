@@ -21,7 +21,7 @@ KinematicsControlNode::KinematicsControlNode(const rclcpp::NodeOptions & node_op
   this->motor_control_target_val_.target_position.resize(NUM_OF_MOTORS);
   this->motor_control_target_val_.target_velocity_profile.resize(NUM_OF_MOTORS);
   for(int i=0; i<NUM_OF_MOTORS; i++) {
-    this->motor_control_target_val_.target_velocity_profile[i] = PERCENT_100/2;
+    this->motor_control_target_val_.target_velocity_profile[i] = PERCENT_100/10;
   }
   motor_control_publisher_ = this->create_publisher<MotorCommand>("motor_command", QoS_RKL10V);
   RCLCPP_INFO(this->get_logger(), "Publisher 'motor_command' is created.");
@@ -178,7 +178,7 @@ void KinematicsControlNode::cal_kinematics(double pAngle, double tAngle, double 
   /* code */
   /* input : actual pos & actual velocity & controller input */
   /* output : target value*/
-
+  
   this->current_pan_angle_ = pAngle;
   this->current_tilt_angle_ = tAngle;
   this->current_grip_angle_ = gAngle;
@@ -206,9 +206,9 @@ void KinematicsControlNode::cal_kinematics(double pAngle, double tAngle, double 
   this->motor_control_target_val_.header.stamp = this->now();
   this->motor_control_target_val_.header.frame_id = "kinematics_motor_target_position";
   this->motor_control_target_val_.target_position[0] = this->virtual_home_pos_[0]
-                                                            + DIRECTION_COUPLER * f_val[0] * gear_encoder_ratio_conversion(GEAR_RATIO_44, ENCODER_CHANNEL, ENCODER_RESOLUTION);
+                                                            + DIRECTION_COUPLER * f_val[0] * 2 * gear_encoder_ratio_conversion(GEAR_RATIO, ENCODER_CHANNEL, ENCODER_RESOLUTION);
   this->motor_control_target_val_.target_position[1] = this->virtual_home_pos_[1]
-                                                            + DIRECTION_COUPLER * f_val[1] * gear_encoder_ratio_conversion(GEAR_RATIO_44, ENCODER_CHANNEL, ENCODER_RESOLUTION);
+                                                            + DIRECTION_COUPLER * f_val[1] * 2 * gear_encoder_ratio_conversion(GEAR_RATIO, ENCODER_CHANNEL, ENCODER_RESOLUTION);
   // this->motor_control_target_val_.target_position[2] = this->virtual_home_pos_[2]
   //                                                           + DIRECTION_COUPLER * f_val[2] * gear_encoder_ratio_conversion(GEAR_RATIO_44, ENCODER_CHANNEL, ENCODER_RESOLUTION);
   // this->motor_control_target_val_.target_position[3] = this->virtual_home_pos_[3]

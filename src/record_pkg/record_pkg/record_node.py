@@ -125,7 +125,8 @@ class RecordNode(Node):
         self.br_rgb = CvBridge()
         self.color_image_rect_raw_subscriber = self.create_subscription(
             Image,
-            "camera/color/image_rect_raw",
+            "camera/color/image_raw",
+            # "camera/color/image_rect_raw",
             self.color_image_rect_raw_callback,
             QOS_RKL10V)
         self.get_logger().info('realsense-camera subscriber is created.')
