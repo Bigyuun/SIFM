@@ -166,6 +166,9 @@ void LCNode(void *pvParameters){
 
 void FTSNode(void *pvParameters){
 
+  mcp2515.reset();
+  mcp2515.setBitrate(CAN_1000KBPS, MCP_8MHZ); //Sets CAN at speed 500KBPS and Clock 8MHz
+  mcp2515.setNormalMode();                  //Sets CAN at normal mode
   canid_t can_id_force_ = FORCE_CAN_ID;
   canid_t can_id_torque_ = TORQUE_CAN_ID;
 
