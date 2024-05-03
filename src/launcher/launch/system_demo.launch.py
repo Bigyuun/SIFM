@@ -47,7 +47,10 @@ def generate_launch_description():
       PythonLaunchDescriptionSource(
         [get_package_share_directory('gui_py_pkg'), '/launch/_launch.py']),
     ),
-
+    IncludeLaunchDescription(
+      PythonLaunchDescriptionSource(
+        [get_package_share_directory('record_pkg'), '/launch/_launch.py']),
+    ),
     IncludeLaunchDescription(
       PythonLaunchDescriptionSource(
         [get_package_share_directory('realsense2_camera'), '/launch/rs_launch.py']),

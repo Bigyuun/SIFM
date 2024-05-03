@@ -127,8 +127,8 @@ class GUINode(Node, QObject):
             SetBool,
             '/data/record'
         )
-        while not self.recoder_service_client.wait_for_service(timeout_sec=2.0):
-            self.get_logger().warning('The "data/recode" service server not available. Check the kinematics_control_node')
+        # while not self.recoder_service_client.wait_for_service(timeout_sec=2.0):
+        #     self.get_logger().warning('The "data/recode" service server not available. Check the kinematics_control_node')
 
     ### ================================================================
     ### Functions
