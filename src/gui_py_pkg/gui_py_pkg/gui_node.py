@@ -18,11 +18,13 @@ from rclpy.qos import QoSReliabilityPolicy
 from rclpy.node import Node
 
 from std_msgs.msg import String
+from std_msgs.msg import Bool
 from geometry_msgs.msg import WrenchStamped
 from std_srvs.srv import SetBool
 from custom_interfaces.msg import LoadcellState
 from custom_interfaces.msg import MotorCommand
 from custom_interfaces.msg import MotorState
+from custom_interfaces.msg import DataFilterSetting
 from custom_interfaces.srv import MoveMotorDirect
 from custom_interfaces.srv import MoveToolAngle
 
@@ -66,7 +68,11 @@ class GUINode(Node, QObject):
             durability=QoSDurabilityPolicy.VOLATILE
         )
 
-        self.motor_command_publisher_ = self.create_publisher(MotorCommand, 'motor_command', QOS_RKL10V)
+        self.motor_command_publisher_ = self.create_publisher(
+            MotorCommand,
+            'motor_command',
+            QOS_RKL10V
+        )
         
         self.fts_data_flag = False
         self.fts_data = WrenchStamped()
@@ -79,13 +85,13 @@ class GUINode(Node, QObject):
         self.get_logger().info('fts_data subscriber is created.')
 
         self.loadcell_data = LoadcellState()
-        self.fts_subscriber = self.create_subscription(
+        self.loadcell_subscriber = self.create_subscription(
             LoadcellState,
             'loadcell_state',
             self.read_loadcell_data,
             QOS_RKL10V
         )
-        self.get_logger().info('loadcell_state subscriber is created.')
+        self.get_logger().info('loadcell_data subscriber is created.')
 
         self.motor_state = MotorState()
         self.motor_state_subscriber = self.create_subscription(
@@ -95,6 +101,24 @@ class GUINode(Node, QObject):
             QOS_RKL10V
         )
         self.get_logger().info('motor_state subscriber is created.')
+        
+        self.data_filter_setting_publisher = self.create_publisher(
+            DataFilterSetting,
+            'data_filter_setting',
+            QOS_RKL10V
+        ) 
+        # self.LPF_state_publisher = self.create_publisher(
+        #     Bool,
+        #     'LPF_state',
+        #     QOS_RKL10V
+        # )
+        # self.moving_avg_filter_state_publisher = self.create_publisher(
+        #     Bool,
+        #     'MAF_state',
+        #     QOS_RKL10V
+        # )
+
+        
 
         # self.data_received_signal = pyqtSignal()
         self.data_received_signal = pyqtSignal(bool)
@@ -139,6 +163,8 @@ class GUINode(Node, QObject):
     #     cv2.imshow("[GUI Node] rgb", current_frame)
     #     cv2.waitKey(1)
     #     # return
+
+    
 
     def read_fts_data(self, msg):
         self.fts_data_flag = True
@@ -230,6 +256,7 @@ class MyGUI(QWidget):
 
         self.init_recorder_ui()
         self.init_motor_ui()
+        self.init_filter_checkbox()
         self.init_fts_ui()
         self.init_loadcell_ui()
         self.init_fts_plot()
@@ -278,11 +305,11 @@ class MyGUI(QWidget):
         self.label_mode = QLabel('Operation Mode')
         self.checkbox_mode_list = [QCheckBox('manual'), QCheckBox('kinematics')]
         self.checkbox_mode_list[0].setChecked(False)
-        self.checkbox_mode_list[0].setFixedWidth(100)
+        self.checkbox_mode_list[0].setFixedWidth(200)
         self.checkbox_mode_list[0].clicked.connect(self.checkbox_mode_clicked)
         self.checkbox_mode_list[0].stateChanged.connect(self.disable_mode)
         self.checkbox_mode_list[1].setChecked(True)
-        self.checkbox_mode_list[1].setFixedWidth(100)
+        self.checkbox_mode_list[1].setFixedWidth(200)
         self.checkbox_mode_list[1].clicked.connect(self.checkbox_mode_clicked)
         # self.checkbox_mode_list[1].stateChanged.connect(self.disable_mode)
         self.layout_mode.addWidget(self.label_mode)
@@ -369,10 +396,10 @@ class MyGUI(QWidget):
         self.label_amode = QLabel('Actuation mode')
         self.checkbox_amode_list = [QCheckBox('Absolute'), QCheckBox('Relative')]
         self.checkbox_amode_list[0].setChecked(False)
-        self.checkbox_amode_list[0].setFixedWidth(100)
+        self.checkbox_amode_list[0].setFixedWidth(200)
         self.checkbox_amode_list[0].clicked.connect(self.checkbox_amode_clicked)
         self.checkbox_amode_list[1].setChecked(True)
-        self.checkbox_amode_list[1].setFixedWidth(100)
+        self.checkbox_amode_list[1].setFixedWidth(200)
         self.checkbox_amode_list[1].clicked.connect(self.checkbox_amode_clicked)
         self.layout_amode.addWidget(self.label_amode)
         self.layout_amode.addWidget(self.checkbox_amode_list[0])
@@ -427,11 +454,51 @@ class MyGUI(QWidget):
         # self.motor_kinematics_layout.addWidget(self.motor_kinematics_button)
         self.layout_global.addLayout(self.motor_kinematics_layout)
 
+    def init_filter_checkbox(self):
+        self.layout_fileter_checkbox = QVBoxLayout()
+
+        self.layout_LPF = QHBoxLayout()
+        self.layout_MAF = QHBoxLayout()
+
+        self.LPF_parameter_label = QLabel('Weight:')
+        self.LPF_parameter_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
+        self.LPF_parameter = QLineEdit('0.3')
+        self.LPF_parameter.setFixedWidth(100)
+        self.LPF_parameter.setFixedHeight(30)
+
+        self.MAF_parameter_label = QLabel('Buffer size:')
+        self.MAF_parameter_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
+        self.MAF_parameter = QLineEdit('5')
+        self.MAF_parameter.setFixedWidth(100)
+        self.MAF_parameter.setFixedHeight(30)
+
+        self.layout_LPF.addWidget(self.LPF_parameter_label)
+        self.layout_LPF.addWidget(self.LPF_parameter)
+        self.layout_MAF.addWidget(self.MAF_parameter_label)
+        self.layout_MAF.addWidget(self.MAF_parameter)
+        
+        self.checkbox_filter_list = [QCheckBox('Weight filter(LPF)'), QCheckBox('Moving avg filter(MAF)')]
+        self.checkbox_filter_list[0].setChecked(True)
+        self.checkbox_filter_list[0].setFixedWidth(350)
+        self.checkbox_filter_list[1].setChecked(True)
+        self.checkbox_filter_list[1].setFixedWidth(350)
+        self.layout_LPF.addWidget(self.checkbox_filter_list[0])
+        self.layout_MAF.addWidget(self.checkbox_filter_list[1])
+        self.layout_LPF.setAlignment(self.checkbox_filter_list[0], Qt.AlignRight)
+        self.layout_MAF.setAlignment(self.checkbox_filter_list[1], Qt.AlignRight)
+        self.layout_global.addLayout(self.layout_LPF)
+        self.layout_global.addLayout(self.layout_MAF)
+
+        # self.checkbox_amode_list[0].clicked.connect(self.checkbox_amode_clicked)
+       
+        # self.filter_checkbox = []
+
     def init_fts_ui(self):
         '''
         @ autor DY
         @ note force-torque sensor list for monitoring
         '''
+        
         self.fts_sub_label_list = []
         self.fts_sub_line_edit_list = []
         self.fts_sub_layout_list = []
@@ -500,6 +567,11 @@ class MyGUI(QWidget):
             self.timer_loadcell = QTimer(self)
             self.timer_loadcell.timeout.connect(self.update_loadcell)
             self.timer_loadcell.start(33)
+
+            # filter_checkbox_state update
+            self.timer_loadcell = QTimer(self)
+            self.timer_loadcell.timeout.connect(self.update_filter_state)
+            self.timer_loadcell.start(500)
 
             # ros node
             self.timer_ros_node = QTimer(self)
@@ -635,8 +707,8 @@ class MyGUI(QWidget):
             self.lc_sub_line_edit_list[1].setText(str(self.node.loadcell_data.stress[1]))
         except Exception as e:
             self.node.get_logger().warning(f'F:update_loadcell() -> {e}')
-
-        return 1
+        finally:
+            return 1
     
     def update_fts_plot(self, frame):
         try:
@@ -666,6 +738,16 @@ class MyGUI(QWidget):
         except Exception as e:
             self.node.get_logger().warning(f'F:update_fts_plot() -> {e}')
             return self.lines
+
+    def update_filter_state(self):
+        msg = DataFilterSetting()
+        msg.set_lpf = self.checkbox_filter_list[0].isChecked()
+        msg.set_maf = self.checkbox_filter_list[1].isChecked()
+        msg.lpf_weight = float(self.LPF_parameter.text())
+        msg.maf_buffer_size = int(self.MAF_parameter.text())
+
+        self.node.data_filter_setting_publisher.publish(msg)
+
     
 
 def main():
