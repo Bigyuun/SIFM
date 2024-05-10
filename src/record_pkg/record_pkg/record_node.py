@@ -100,13 +100,13 @@ class RecordNode(Node):
 
         self.loadcell_data_flag = False
         self.loadcell_data = LoadcellState()
-        self.fts_subscriber = self.create_subscription(
+        self.lc_subscriber = self.create_subscription(
             LoadcellState,
             'loadcell_state',
             self.read_loadcell_data,
             QOS_RKL10V
         )
-        self.get_logger().info('fts_data subscriber is created.')
+        self.get_logger().info('loadcell_data subscriber is created.')
 
         self.motor_state_flag = False
         self.motor_state = MotorState()

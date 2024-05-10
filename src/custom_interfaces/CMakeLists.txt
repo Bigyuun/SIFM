@@ -18,6 +18,7 @@ set(msg_files
   "msg/MotorCommand.msg"
   "msg/MotorCommandCSV.msg"
   "msg/LoadcellState.msg"
+  "msg/DataFilterSetting.msg"
 )
 
 set(srv_files
