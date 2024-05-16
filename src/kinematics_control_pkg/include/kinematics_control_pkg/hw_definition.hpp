@@ -37,7 +37,7 @@
 //===============================
 #define DOF               1     // Degree of freedom
 
-#define NUM_OF_JOINT      6     // ea
+#define NUM_OF_JOINT      7     // ea
 #define SEGMENT_ARC       15.0  // mm
 #define SEGMENT_DIAMETER  9     // mm
 #define WIRE_DISTANCE     3.63   // mm
@@ -53,7 +53,7 @@
 #define MAX_FORCEPS_RAGNE_DEGREE 30.0  // degree
 #define MAX_FORCEPS_RAGNE_MM 2.0  // mm (nor int)
 
-#define JOINT_INTERVAL    3   // mm
+// #define JOINT_INTERVAL    3   // mm
 
 //===============================
 // Loadcell Parameters

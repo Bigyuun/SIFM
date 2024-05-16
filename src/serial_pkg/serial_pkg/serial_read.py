@@ -99,7 +99,7 @@ class SerialNode(Node):
         self.force3d = np.zeros((1,3))   # empty list [0, 0, 0]
         self.torque3d = np.zeros((1,3))   # empty list [0, 0, 0]
         self.loadcell_weight = np.zeros((1,2))
-        self.get_logger().info(f'shape={self.force3d.shape}')
+        # self.get_logger().info(f'shape={self.force3d.shape}')
 
         self.offset_force3d = np.zeros((1,3))
         self.offset_torque3d = np.zeros((1,3))

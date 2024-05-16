@@ -697,8 +697,8 @@ class MyGUI(QWidget):
             self.fts_sub_line_edit_list[4].setText(str(self.node.fts_data.wrench.torque.y))
             self.fts_sub_line_edit_list[5].setText(str(self.node.fts_data.wrench.torque.z))
         except Exception as e:
-            self.node.get_logger().warning(f'F:update_fts() -> {e}')
-
+            # self.node.get_logger().warning(f'F:update_fts() -> {e}')
+            pass
         return 1
     
     def update_loadcell(self):
@@ -706,7 +706,8 @@ class MyGUI(QWidget):
             self.lc_sub_line_edit_list[0].setText(str(self.node.loadcell_data.stress[0]))
             self.lc_sub_line_edit_list[1].setText(str(self.node.loadcell_data.stress[1]))
         except Exception as e:
-            self.node.get_logger().warning(f'F:update_loadcell() -> {e}')
+            # self.node.get_logger().warning(f'F:update_loadcell() -> {e}')
+            pass
         finally:
             return 1
     
