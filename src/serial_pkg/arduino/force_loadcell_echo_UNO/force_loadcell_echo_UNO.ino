@@ -204,6 +204,56 @@ void FTSNode(void *pvParameters){
   // FTS.spin(pvParameters);
 }
 
+void SensorsNode(void *pvParameters){
+
+  mcp2515.reset();
+  mcp2515.setBitrate(CAN_1000KBPS, MCP_8MHZ); //Sets CAN at speed 500KBPS and Clock 8MHz
+  mcp2515.setNormalMode();                  //Sets CAN at normal mode
+  canid_t can_id_force_ = FORCE_CAN_ID;
+  canid_t can_id_torque_ = TORQUE_CAN_ID;
+
+  HX711 lc1, lc2;
+  lc1.begin(HX711_DOUT_1, HX711_SCK_1);
+  lc1.set_scale(CALIBRATION_VALUE_1);
+  lc1.tare();
+  lc2.begin(HX711_DOUT_2, HX711_SCK_2);
+  lc2.set_scale(CALIBRATION_VALUE_2);
+  lc2.tare();
+
+  while(true)
+  {
+    if (mcp2515.readMessage(&kcan_read_msg_) == MCP2515::ERROR_OK) {
+      // CAN 메시지 출력
+//      Serial.print(kcan_read_msg_.can_id, HEX); // ID 출력
+//      Serial.print(" ");
+//      Serial.print(kcan_read_msg_.can_dlc, HEX); // DLC 출력
+//      Serial.print(" ");
+//      for (int i = 0; i < kcan_read_msg_.can_dlc; i++) {
+//        Serial.print(kcan_read_msg_.data[i], HEX);
+//      }
+//      Serial.println("");
+
+      if (kcan_read_msg_.can_id == can_id_force_){  // 26
+        // mN 으로 force 계산
+        fx_ = (kcan_read_msg_.data[0]*256 + kcan_read_msg_.data[1])-30000;
+        fy_ = (kcan_read_msg_.data[2]*256 + kcan_read_msg_.data[3])-30000;
+        fz_ = (kcan_read_msg_.data[4]*256 + kcan_read_msg_.data[5])-30000;
+        // Serial.println("FORCE");
+      }
+      else if (kcan_read_msg_.can_id == can_id_torque_){ //27
+        // mNm 으로 torque 계산
+        tx_ = (kcan_read_msg_.data[0]*256 + kcan_read_msg_.data[1])-30000;
+        ty_ = (kcan_read_msg_.data[2]*256 + kcan_read_msg_.data[3])-30000;
+        tz_ = (kcan_read_msg_.data[4]*256 + kcan_read_msg_.data[5])-30000;
+        // Serial.println("TORQUE");
+      }
+    }
+    lc_data_[0] = lc1.read();
+    lc_data_[1] = lc2.read();
+  }
+  // FTS.spin(pvParameters);
+}
+
 
 void setup() {
   // put your setup code here, to run once:
@@ -217,13 +267,19 @@ void setup() {
   if (integerQueue != NULL) {
     xTaskCreate(SerialWriteNode,
                 "SerialWriteNode",
-                128,
+                256,
                 NULL,
                 2,
                 NULL);
+//    xTaskCreate(SensorsNode,
+//                "SensorsNode",
+//                256,
+//                NULL,
+//                2,
+//                NULL);
     xTaskCreate(FTSNode,
-                "FTSNode",
-                256,
+                "LoadcellNode",
+                128,
                 NULL,
                 2,
                 NULL);
@@ -233,6 +289,7 @@ void setup() {
                 NULL,
                 2,
                 NULL);
+                
     
   }
 }
