@@ -369,11 +369,11 @@ class MyGUI(QWidget):
         # @autor DY
         # lambda F for apply the funtion to all the list arugments)
         list(map(lambda x: x.setAlignment(Qt.AlignVCenter | Qt.AlignRight), self.motor_state_label_list))        
-        list(map(lambda x: x.setFixedWidth(100), self.motor_state_line_edit_list))
+        list(map(lambda x: x.setFixedWidth(150), self.motor_state_line_edit_list))
         list(map(lambda x: x.setFixedHeight(30), self.motor_state_line_edit_list))
         list(map(lambda x: x.setReadOnly(True), self.motor_state_line_edit_list))
         list(map(lambda x: x.setAlignment(Qt.AlignVCenter | Qt.AlignRight), self.motor_pub_label_list))
-        list(map(lambda x: x.setFixedWidth(100), self.motor_pub_line_edit_list))
+        list(map(lambda x: x.setFixedWidth(150), self.motor_pub_line_edit_list))
         list(map(lambda x: x.setFixedHeight(30), self.motor_pub_line_edit_list))
         list(map(lambda x: x.setFixedWidth(150), self.motor_pub_button_list))
         list(map(lambda x: x.setFixedHeight(30), self.motor_pub_button_list))        
@@ -576,7 +576,7 @@ class MyGUI(QWidget):
             # ros node
             self.timer_ros_node = QTimer(self)
             self.timer_ros_node.timeout.connect(self.node_spin_once)
-            self.timer_ros_node.start(10)  # 10 밀리초 주기로 타이머 실행
+            self.timer_ros_node.start(2)  # 10 밀리초 주기로 타이머 실행
         except Exception as e:
             self.node.get_logger().warning(f'F:init_timer() -> {e}')
 
@@ -721,6 +721,7 @@ class MyGUI(QWidget):
                 new_data[3] = (self.node.fts_data.wrench.torque.x)
                 new_data[4] = (self.node.fts_data.wrench.torque.y)
                 new_data[5] = (self.node.fts_data.wrench.torque.z)
+
                 self.data_y = np.roll(self.data_y, shift=-1, axis=1)
                 self.data_y[:, -1] = new_data
 

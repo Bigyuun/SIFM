@@ -21,7 +21,6 @@
 #include <SPI.h>
 #include <mcp2515.h> // mcp2515 라이브러리를 설치해야 합니다. (https://github.com/autowp/arduino-mcp2515/)
 #include <HX711.h>
-#include <HX711_ADC.h>
 
 #define FORCE_CAN_ID 0x2A
 #define TORQUE_CAN_ID 0x2B
@@ -29,15 +28,14 @@
 
 // Load Cell pin
 #define NUMBER_OF_LOADCELL_MODULE        2
-#define PRESS_TENSILE_DIRECTION          1 // PRESS: 1, TENSILE(PULL): -1
+
 #define HX711_DOUT_1                     4  // mcu > HX711 no 1 dout pin
 #define HX711_SCK_1                      5  // mcu > HX711 no 1 sck pin
-#define CALIBRATION_VALUE_1              275.684936
-// #define CALIBRATION_VALUE_1              1000
+#define CALIBRATION_VALUE_1              2000
 
 #define HX711_DOUT_2                     6  // mcu > HX711 no 2 dout pin
 #define HX711_SCK_2                      7  // mcu > HX711 no 2 sck pin
-#define CALIBRATION_VALUE_2              264.398579
+#define CALIBRATION_VALUE_2              3000
 
 // CAN comm pin
 #define MCP2515_SPI_CS                   10
@@ -89,8 +87,10 @@ struct LoopTimeChecker
 LoopTimeChecker TimeChecker;
 static volatile long fx_ = 0, fy_ = 0, fz_ = 0; 
 static volatile long tx_ = 0, ty_ = 0, tz_ = 0;
-static volatile float lc_data_[NUMBER_OF_LOADCELL_MODULE] = {0};
-static volatile float lc_tare_offset_[NUMBER_OF_LOADCELL_MODULE] = {0};
+static volatile long lc_data_[NUMBER_OF_LOADCELL_MODULE] = {0};
+
+// ForceTorqueSensor FTS;
+// Loadcell LC;
 
 /******************************************************************************************
  * Functions
@@ -135,12 +135,9 @@ void SerialWriteNode(void *pvParameters)
     str_send_buffer += String(tx_) + ",";
     str_send_buffer += String(ty_) + ",";
     str_send_buffer += String(tz_) + ",";
-    str_send_buffer += String(lc_data_[0], 2) + ",";
-    str_send_buffer += String(lc_data_[1], 2);
+    str_send_buffer += String(lc_data_[0]) + ",";
+    str_send_buffer += String(lc_data_[1]);
     str_send_buffer += String(C_ETX);
-    // str_send_buffer += String(lc_tare_offset_[0]) + "/";
-    // str_send_buffer += String(lc_tare_offset_[1]);
-
     // str_send_buffer += String(count++);
     Serial.println(str_send_buffer);
     TimeChecker.loop_time_checker_SerialWriting = temp_time;
@@ -148,83 +145,28 @@ void SerialWriteNode(void *pvParameters)
   }
 }
 
-// void LCNode(void *pvParameters){
-
-//   HX711 lc1, lc2;
-//   lc1.begin(HX711_DOUT_1, HX711_SCK_1);
-//   lc1.set_scale(CALIBRATION_VALUE_1);
-//   lc1.tare();
-//   lc2.begin(HX711_DOUT_2, HX711_SCK_2);
-//   lc2.set_scale(CALIBRATION_VALUE_2);
-//   lc2.tare();
-
-//   while(true)
-//   {
-//     lc_data_[0] = PRESS_TENSILE_DIRECTION * lc1.read();
-//     lc_data_[1] = PRESS_TENSILE_DIRECTION * lc2.read();
-//   }
-//   // FTS.spin(pvParameters);
-// }
-
 void LCNode(void *pvParameters){
 
-  HX711_ADC lc1(HX711_DOUT_1, HX711_SCK_1);
-  HX711_ADC lc2(HX711_DOUT_2, HX711_SCK_2);
-  lc1.begin();
-  lc2.begin();
-  Serial.println("HX711 start...");
-
-  unsigned long stabilizingtime = 2000; // preciscion right after power-up can be improved by adding a few seconds of stabilizing time
-  boolean _tare = true; //set this to false if you don't want tare to be performed in the next step
-  byte loadcell_1_rdy = 0;
-  byte loadcell_2_rdy = 0;
-  while ((loadcell_1_rdy + loadcell_2_rdy) < 2) { //run startup, stabilization and tare, both modules simultaniously
-    if (!loadcell_1_rdy) loadcell_1_rdy = lc1.startMultiple(stabilizingtime, _tare);
-    if (!loadcell_2_rdy) loadcell_2_rdy = lc2.startMultiple(stabilizingtime, _tare);
-  }
-  lc1.start(stabilizingtime, _tare);
-  if (lc1.getTareTimeoutFlag()) {
-    Serial.println("Timeout, check MCU>HX711 wiring and pin designations");
-    while (1);
-  }
-  lc2.start(stabilizingtime, _tare);
-  if (lc2.getTareTimeoutFlag()) {
-    Serial.println("Timeout, check MCU>HX711 wiring and pin designations");
-    while (1);
-  }
-  lc1.setCalFactor(CALIBRATION_VALUE_1); // user set calibration value (float)
-  lc2.setCalFactor(CALIBRATION_VALUE_2); // user set calibration value (float)
-
-  unsigned long t = 0;
-  Serial.println("HX711 is up");
+  HX711 lc1, lc2;
+  lc1.begin(HX711_DOUT_1, HX711_SCK_1);
+  lc1.set_scale(CALIBRATION_VALUE_1);
+  lc1.tare();
+  lc2.begin(HX711_DOUT_2, HX711_SCK_2);
+  lc2.set_scale(CALIBRATION_VALUE_2);
+  lc2.tare();
 
   while(true)
   {
-    static boolean newDataReady = 0;
-    const int serialPrintInterval = 0; //increase value to slow down serial print activity
-
-    // check for new data/start next conversion:
-    if (lc1.update()) newDataReady = true;
-    lc2.update();
-
-    //get smoothed value from data set
-    if ((newDataReady)) {
-      if (millis() > t + serialPrintInterval) {
-        float a = lc1.getData();
-        float b = lc2.getData();
-        lc_data_[0] = a;
-        lc_data_[1] = b;
-        // Serial.print("Load_cell 1 output val: ");
-        // Serial.print(a);
-        // Serial.print("    Load_cell 2 output val: ");
-        // Serial.println(b);
-        newDataReady = 0;
-        t = millis();
-      }
-    }
-    Serial.println("HX711 update");
-
+    lc_data_[0] = lc1.read();
+    lc_data_[1] = lc2.read();
+    // lc_data_[0] = lc1.read() / CALIBRATION_VALUE_1;
+    // lc_data_[1] = lc2.read() / CALIBRATION_VALUE_2;
+    // lc_data_[0] = lc1.get_units();
+    // lc_data_[1] = lc2.get_units();
+    // lc_data_[0] = lc1.get_values();
+    // lc_data_[1] = lc2.get_values();
   }
+  // FTS.spin(pvParameters);
 }
 
 void FTSNode(void *pvParameters){
@@ -269,46 +211,20 @@ void FTSNode(void *pvParameters){
 
 void SensorsNode(void *pvParameters){
 
-  //////////////////////////////////////////////////////////////////////////////////
   mcp2515.reset();
   mcp2515.setBitrate(CAN_1000KBPS, MCP_8MHZ); //Sets CAN at speed 500KBPS and Clock 8MHz
   mcp2515.setNormalMode();                  //Sets CAN at normal mode
   canid_t can_id_force_ = FORCE_CAN_ID;
   canid_t can_id_torque_ = TORQUE_CAN_ID;
 
-  //////////////////////////////////////////////////////////////////////////////////
-  HX711_ADC lc1(HX711_DOUT_1, HX711_SCK_1);
-  HX711_ADC lc2(HX711_DOUT_2, HX711_SCK_2);
-  lc1.begin();
-  lc2.begin();
-  Serial.println("HX711 start...");
+  HX711 lc1, lc2;
+  lc1.begin(HX711_DOUT_1, HX711_SCK_1);
+  lc1.set_scale(CALIBRATION_VALUE_1);
+  lc1.tare();
+  lc2.begin(HX711_DOUT_2, HX711_SCK_2);
+  lc2.set_scale(CALIBRATION_VALUE_2);
+  lc2.tare();
 
-  unsigned long stabilizingtime = 2000; // preciscion right after power-up can be improved by adding a few seconds of stabilizing time
-  // boolean _tare = true; //set this to false if you don't want tare to be performed in the next step
-  boolean _tare = false; //set this to false if you don't want tare to be performed in the next step
-  byte loadcell_1_rdy = 0;
-  byte loadcell_2_rdy = 0;
-  while ((loadcell_1_rdy + loadcell_2_rdy) < 2) { //run startup, stabilization and tare, both modules simultaniously
-    if (!loadcell_1_rdy) loadcell_1_rdy = lc1.startMultiple(stabilizingtime, _tare);
-    if (!loadcell_2_rdy) loadcell_2_rdy = lc2.startMultiple(stabilizingtime, _tare);
-  }
-  lc1.start(stabilizingtime, _tare);
-  if (lc1.getTareTimeoutFlag()) {
-    Serial.println("Timeout, check MCU>HX711 wiring and pin designations");
-    while (1);
-  }
-  lc2.start(stabilizingtime, _tare);
-  if (lc2.getTareTimeoutFlag()) {
-    Serial.println("Timeout, check MCU>HX711 wiring and pin designations");
-    while (1);
-  }
-  lc1.setCalFactor(CALIBRATION_VALUE_1); // user set calibration value (float)
-  lc2.setCalFactor(CALIBRATION_VALUE_2); // user set calibration value (float)
-
-  unsigned long t = 0;
-  Serial.println("HX711 is up");
-
-  //////////////////////////////////////////////////////////////////////////////////
   while(true)
   {
     if (mcp2515.readMessage(&kcan_read_msg_) == MCP2515::ERROR_OK) {
@@ -337,33 +253,8 @@ void SensorsNode(void *pvParameters){
         // Serial.println("TORQUE");
       }
     }
-    
-    
-    static boolean newDataReady = 0;
-    const int serialPrintInterval = 0; //increase value to slow down serial print activity
-
-    // check for new data/start next conversion:
-    if (lc1.update()) newDataReady = true;
-    lc2.update();
-
-    //get smoothed value from data set
-    if ((newDataReady)) {
-      if (millis() > t + serialPrintInterval) {
-        float a = lc1.getData();
-        float b = lc2.getData();
-        lc_data_[0] = a;
-        lc_data_[1] = b;
-
-        lc_tare_offset_[0] = lc1.getTareOffset();
-        lc_tare_offset_[1] = lc2.getTareOffset();
-        // Serial.print("Load_cell 1 output val: ");
-        // Serial.print(a);
-        // Serial.print("    Load_cell 2 output val: ");
-        // Serial.println(b);
-        newDataReady = 0;
-        t = millis();
-      }
-    }
+    lc_data_[0] = lc1.read();
+    lc_data_[1] = lc2.read();
   }
   // FTS.spin(pvParameters);
 }
@@ -379,44 +270,31 @@ void setup() {
                               );
 
   if (integerQueue != NULL) {
-    
-  //  xTaskCreate(SensorsNode,
-  //              "SensorsNode",
-  //              512,
-  //              NULL,
-  //              2,
-  //              NULL);
-    // xTaskCreate(LCNode,
-    //             "LoadcellNode",
-    //             384,
-    //             NULL,
-    //             2,
-    //             NULL);
-    // xTaskCreate(FTSNode,
-    //             "FTSNode",
-    //             128,
-    //             NULL,
-    //             2,
-    //             NULL);
-    
     xTaskCreate(SerialWriteNode,
                 "SerialWriteNode",
                 256,
                 NULL,
                 2,
                 NULL);
-    xTaskCreate(SensorsNode,
-                "SensorsNode",
-                384,
+//    xTaskCreate(SensorsNode,
+//                "SensorsNode",
+//                256,
+//                NULL,
+//                2,
+//                NULL);
+    xTaskCreate(FTSNode,
+                "FTSNode",
+                128,
                 NULL,
                 2,
                 NULL);
-    // xTaskCreate(SensorsNode,
-    //             "SensorsNode",
-    //             384,
-    //             NULL,
-    //             2,
-    //             NULL);
+    xTaskCreate(LCNode,
+                "LoadcellNode",
+                256,
+                NULL,
+                2,
+                NULL);
+                
     
   }
 }
