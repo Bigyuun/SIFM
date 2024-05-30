@@ -411,8 +411,8 @@ class MyGUI(QWidget):
         
         self.motor_kinematics_layout = QVBoxLayout()
         self.motor_kinematics_label_list = []
-        self.motor_kinematics_label_list.append(QLabel("Move Tip(Degree) | Tilt(E-W)"))
         self.motor_kinematics_label_list.append(QLabel("Move Tip(Degree) | Pan (S-N)"))
+        self.motor_kinematics_label_list.append(QLabel("Move Tip(Degree) | Tilt(E-W)"))
 
         self.motor_kinematics_line_edit_list = []
         self.motor_kinematics_layout_list = []
