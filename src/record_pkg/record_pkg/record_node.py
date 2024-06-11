@@ -30,6 +30,7 @@ from cv_bridge import CvBridge
 from datetime import datetime
 
 import csv
+import json
 import subprocess   # CLI
 
 class RecordNode(Node):
@@ -51,7 +52,7 @@ class RecordNode(Node):
 
         # topic_info_fts_data = rosbag2_py._storage.TopicMetadata(
         #     # id=0,
-        #     name='fts_data_raw',
+        #     name='fts_data',
         #     type='geometry_msgs/msg/WrenchStamped',
         #     serialization_format='cdr')
         # topic_info_loadcell = rosbag2_py._storage.TopicMetadata(
@@ -92,8 +93,15 @@ class RecordNode(Node):
         self.fts_data = WrenchStamped()
         self.fts_subscriber = self.create_subscription(
             WrenchStamped,
-            'fts_data_raw',
+            'fts_data',
             self.read_fts_data,
+            QOS_RKL10V
+        )
+        self.fts_data_offset = WrenchStamped()
+        self.fts_offset_subscriber = self.create_subscription(
+            WrenchStamped,
+            'fts_data_offset',
+            self.read_fts_data_offset,
             QOS_RKL10V
         )
         self.get_logger().info('fts_data subscriber is created.')
@@ -104,6 +112,13 @@ class RecordNode(Node):
             LoadcellState,
             'loadcell_state',
             self.read_loadcell_data,
+            QOS_RKL10V
+        )
+        self.loadcell_data_offset = LoadcellState()
+        self.lc_offset_subscriber = self.create_subscription(
+            LoadcellState,
+            'loadcell_state_offset',
+            self.read_loadcell_data_offset,
             QOS_RKL10V
         )
         self.get_logger().info('loadcell_data subscriber is created.')
@@ -125,7 +140,7 @@ class RecordNode(Node):
         self.br_rgb = CvBridge()
         self.color_image_rect_raw_subscriber = self.create_subscription(
             Image,
-            "camera/color/image_raw",
+            "/camera/camera/color/image_raw",
             # "camera/color/image_rect_raw",
             self.color_image_rect_raw_callback,
             QOS_RKL10V)
@@ -136,7 +151,8 @@ class RecordNode(Node):
         ### file managers
         ### ================================================================
         # hw_definition.hpp 파일의 경로 설정
-        print(os.getcwd())
+        self.get_logger().info(f'{os.getcwd()}')
+
         hw_definition_hpp_path = './src/kinematics_control_pkg/include/kinematics_control_pkg/hw_definition.hpp'
         # 파싱하여 상수 값을 읽어옴
         constants = self.parse_hw_definition_hpp(hw_definition_hpp_path)
@@ -173,7 +189,24 @@ class RecordNode(Node):
                 # os.chdir(self.directory_path)
                 self.create_directory()
                 self.create_csv()
-                self.bag_process = subprocess.Popen(['ros2', 'bag', 'record', '-a'], cwd=self.directory_path)
+                self.create_metadata_json()
+
+
+                """
+                if record all topics excluding /camera/* data, use under line
+                """
+                cmd = 'ros2 bag record -a --exclude "/camera(.*)"'
+                self.bag_process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=self.directory_path)
+
+
+                """
+                if record all(-a) topics, use under code
+                """
+                # self.bag_process = subprocess.Popen(['ros2',
+                #                                     'bag',
+                #                                     'record',
+                #                                     '-a'], cwd=self.directory_path)
+
                 response.success = True
                 response.message = 'Start Recording.'
             elif self.is_recording == False:
@@ -185,7 +218,7 @@ class RecordNode(Node):
                 response.message = 'Stop Recording.'
                 self.data_count = 0
         except Exception as e:
-            print(f'Exception Error as {e}')
+            self.get_logger().info(f'Exception Error as {e}')
             response.success = False
             response.message = 'Error is up for recording.'
 
@@ -219,8 +252,8 @@ class RecordNode(Node):
             cv2.imwrite(self.directory_path_image + '/' + str(self.data_count) +'.png', self.current_frame)
             self.update_csv()
 
-        cv2.imshow("[Record Node] rgb", self.current_frame)
-        cv2.waitKey(1)
+        # cv2.imshow("[Record Node] rgb", self.current_frame)
+        # cv2.waitKey(1)
         # if self.is_recording:
         #     self.rosbag_writer.write(
         #     'camera/color/image_rect_raw',
@@ -233,10 +266,14 @@ class RecordNode(Node):
     def read_fts_data(self, msg):
         self.fts_data_flag = True
         self.fts_data = msg
+    def read_fts_data_offset(self, msg):
+        self.fts_data_offset = msg
 
     def read_loadcell_data(self, msg):
         self.loadcell_data_flag = True
         self.loadcell_data = msg
+    def read_loadcell_data_offset(self, msg):
+        self.loadcell_data_offset = msg
 
     def read_motor_state(self, msg):
         self.motor_state_flag = True
@@ -247,7 +284,7 @@ class RecordNode(Node):
         self.directory_path = os.path.join('./record', c_time)
         if not os.path.exists(self.directory_path):
             os.makedirs(self.directory_path)
-            print(f'Directory is created => {self.directory_path}')
+            self.get_logger().info(f'Directory is created => {self.directory_path}')
         self.directory_path_image = os.path.join(self.directory_path, 'images')
         if not os.path.exists(self.directory_path_image):
             os.makedirs(self.directory_path_image)
@@ -255,12 +292,14 @@ class RecordNode(Node):
 
     def create_csv(self):
         self.csv_file_name = os.path.join(self.directory_path_csv, 'data.csv')
-        print(f'CSV is created => name : {self.csv_file_name}')
+        self.get_logger().info(f'CSV is created => name : {self.csv_file_name}')
+
         self.csv_headers = {}
-        self.csv_headers['timestamp'] = []
+        self.csv_headers['timestamp sec'] = []
+        self.csv_headers['timestamp nanosec'] = []
         self.csv_headers['image file'] = []
         for i in range(self.numofmotors):
-            self.csv_headers[f'motor #{i}'] = []
+            self.csv_headers[f'motor #{i} position'] = []
         for i in range(self.numofmotors):
             self.csv_headers[f'loadcell #{i}'] = []
         self.csv_headers['fx'] = []
@@ -269,43 +308,24 @@ class RecordNode(Node):
         self.csv_headers['tx'] = []
         self.csv_headers['ty'] = []
         self.csv_headers['tz'] = []
-        # print(f"{self.csv_headers}")
+
         self.csv_file = open(self.csv_file_name, mode='w')
         self.csv_writer = csv.writer(self.csv_file)
-        self.csv_writer.writerow(self.csv_headers)
 
     def update_csv(self):
         # if not self.image_flag and not self.fts_data_flag and not self.motor_state_flag and not self.loadcell_data_flag:
         #     self.get_logger().warning(f'All data are not subscribed')
         #     return
         
-        timestamp = str(self.capture_time.sec) + str(self.capture_time.nanosec)
+        timestamp_sec = str(self.capture_time.sec)
+        timestamp_nanosec = str(self.capture_time.nanosec)
         image_file = str(self.data_count) +'.png'
         actual_position = self.motor_state.actual_position
         loadcell_stress = self.loadcell_data.stress
         forcexyz = self.fts_data.wrench.force
         torquexyz = self.fts_data.wrench.torque
         
-        # self.csv_writer.write(f"{timestamp}, {image_file}")
-        # self.csv_writer.write(",".join(str(value) for value in actual_position))
-        # self.csv_writer.write(",")
-        # self.csv_writer.write(",".join(str(value) for value in loadcell_stress))
-        # self.csv_writer.write(",")
-        # self.csv_writer.write(",".join(str(value) for value in forcexyz))
-        # self.csv_writer.write(",")
-        # self.csv_writer.write(",".join(str(value) for value in torquexyz))
-        # self.csv_writer.write("\n")
-        # self.csv_writer.writerow([timestamp, image_file]
-        #                          + [",".join(map(str, actual_position))]
-        #                          + [",".join(map(str, loadcell_stress))]
-        #                          + [","+str(forcexyz.x)]
-        #                          + [","+str(forcexyz.y)]
-        #                          + [","+str(forcexyz.z)]
-        #                          + [","+str(torquexyz.z)]
-        #                          + [","+str(torquexyz.y)]
-        #                          + [","+str(torquexyz.z)])
-        
-        self.csv_writer.writerow([timestamp, image_file]
+        self.csv_writer.writerow([timestamp_sec, timestamp_nanosec, image_file]
                                  + [str(value) for value in actual_position]
                                  + [str(value) for value in loadcell_stress]
                                  + [str(forcexyz.x)]
@@ -314,10 +334,50 @@ class RecordNode(Node):
                                  + [str(torquexyz.x)]
                                  + [str(torquexyz.y)]
                                  + [str(torquexyz.z)])
-        
         self.csv_file.flush()    
         pass
-    
+
+    def create_metadata_json(self):
+        # declare dictionary of metadata
+        metadata = {
+            "info": {
+                "NUM_OF_MOTORS": self.numofmotors,
+            },
+            "units": {
+                "timestamp sec": "s",
+                "timestamp nanosec": "ns",
+                "image file": "filename",
+                "motor position": "encoder inc",
+                "loadcell": "g",
+                "fx": "mN",
+                "fy": "mN",
+                "fz": "mN",
+                "tx": "mNm",
+                "ty": "mNm",
+                "tz": "mNm"
+            },
+            "offsets": {
+                "fx": self.fts_data_offset.wrench.force.x,
+                "fy": self.fts_data_offset.wrench.force.y,
+                "fz": self.fts_data_offset.wrench.force.z,
+                "tx": self.fts_data_offset.wrench.torque.x,
+                "ty": self.fts_data_offset.wrench.torque.y,
+                "tz": self.fts_data_offset.wrench.torque.z
+            },
+        }
+
+        ## Add units of motors and loadcells.
+        # for i in range(self.numofmotors):
+        #     metadata["units"][f"motor #{i}"] = "encoder inc"
+        #     metadata["units"][f"loadcell #{i}"] = "mN"
+
+        # 메타데이터를 JSON 파일로 저장합니다.
+        self.metadata_file_name = os.path.join(self.directory_path_csv, "metadata.json")
+        with open(self.metadata_file_name, 'w') as metadata_file:
+            json.dump(metadata, metadata_file, indent=4)
+
+        self.get_logger().info(f"metadata.json is created => name : {self.metadata_file_name}")
+
     def parse_hw_definition_hpp(self, file_path):
         """
         Parse the given HPP file and extract global variables and their values.

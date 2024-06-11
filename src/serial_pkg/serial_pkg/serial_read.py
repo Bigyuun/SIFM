@@ -45,13 +45,23 @@ class SerialNode(Node):
 
         self.fts_publisher = self.create_publisher(
             WrenchStamped,
-            'fts_data_raw',
+            'fts_data',
+            QOS_RKL10V
+        )
+        self.fts_offset_publisher = self.create_publisher(
+            WrenchStamped,
+            'fts_data_offset',
             QOS_RKL10V
         )
         
         self.loadcell_publisher = self.create_publisher(
             LoadcellState,
             'loadcell_state',
+            QOS_RKL10V
+        )
+        self.loadcell_offset_publisher = self.create_publisher(
+            LoadcellState,
+            'loadcell_state_offset',
             QOS_RKL10V
         )
 
@@ -61,6 +71,8 @@ class SerialNode(Node):
             self.data_filter_setting_callback,
             QOS_RKL10V
         )
+
+        
         # self.LPF_state = Bool()
         # self.LPF_state.data = False
         # self.get_logger().info(f'LPF_state: {self.LPF_state.data}')
@@ -144,25 +156,41 @@ class SerialNode(Node):
     #     # self.get_logger().info(f'MAF_state: {self.MAF_state.data}')
 
     def publishall(self):
-        msg = WrenchStamped()
-        msg.header.stamp = self.get_clock().now().to_msg()
-        msg.header.frame_id = 'fts'
-        msg.wrench.force.x = self.force3d.squeeze()[0]
-        msg.wrench.force.y = self.force3d.squeeze()[1]
-        msg.wrench.force.z = self.force3d.squeeze()[2]
-        msg.wrench.torque.x = self.torque3d.squeeze()[0]
-        msg.wrench.torque.y = self.torque3d.squeeze()[1]
-        msg.wrench.torque.z = self.torque3d.squeeze()[2]
-        self.fts_publisher.publish(msg)
+        msg1 = WrenchStamped()
+        msg1.header.stamp = self.get_clock().now().to_msg()
+        msg1.header.frame_id = 'fts_data'
+        msg1.wrench.force.x = self.force3d.squeeze()[0]
+        msg1.wrench.force.y = self.force3d.squeeze()[1]
+        msg1.wrench.force.z = self.force3d.squeeze()[2]
+        msg1.wrench.torque.x = self.torque3d.squeeze()[0]
+        msg1.wrench.torque.y = self.torque3d.squeeze()[1]
+        msg1.wrench.torque.z = self.torque3d.squeeze()[2]
+        self.fts_publisher.publish(msg1)
+
+        offset_msg1 = WrenchStamped()
+        offset_msg1.header.stamp = self.get_clock().now().to_msg()
+        offset_msg1.header.frame_id = 'fts_data_offset'
+        offset_msg1.wrench.force.x = float(self.offset_force3d.squeeze()[0])
+        offset_msg1.wrench.force.y = float(self.offset_force3d.squeeze()[1])
+        offset_msg1.wrench.force.z = float(self.offset_force3d.squeeze()[2])
+        offset_msg1.wrench.torque.x = float(self.offset_torque3d.squeeze()[0])
+        offset_msg1.wrench.torque.y = float(self.offset_torque3d.squeeze()[1])
+        offset_msg1.wrench.torque.z = float(self.offset_torque3d.squeeze()[2])
+        self.fts_offset_publisher.publish(offset_msg1)
 
         msg = LoadcellState()
         msg.header.stamp = self.get_clock().now().to_msg()
-        msg.header.frame_id = 'loadcell'
+        msg.header.frame_id = 'loadcell_state'
         msg.stress.append(self.loadcell_weight.squeeze()[0])
         msg.stress.append(self.loadcell_weight.squeeze()[1])
-        # msg.output_voltage = self.loadcell_weight[1]
-
         self.loadcell_publisher.publish(msg)
+
+        offset_msg = LoadcellState()
+        offset_msg.header.stamp = self.get_clock().now().to_msg()
+        offset_msg.header.frame_id = 'loadcell_state_offset'
+        offset_msg.stress.append(self.offset_loadcell_weight.squeeze()[0])
+        offset_msg.stress.append(self.offset_loadcell_weight.squeeze()[1])
+        self.loadcell_offset_publisher.publish(offset_msg)
         
     def read_serial_data(self):
         try:
@@ -279,7 +307,7 @@ class SerialNode(Node):
                                     # self.get_logger().info(f'[{count}]parsing data = {parsing_data}')
                                     force_3d.append(parsing_data[0:3])
                                     torque_3d.append(parsing_data[3:6])
-                                    lc.append(parsing_data[6:8])
+                                    # lc.append(parsing_data[6:8])
                                     count = count + 1
                                 # self.publishall()
                             except ValueError as e:
@@ -299,7 +327,7 @@ class SerialNode(Node):
 
             self.offset_force3d = np.asarray(force_3d).mean(axis=0).astype(int)
             self.offset_torque3d = np.asarray(torque_3d).mean(axis=0).astype(int)
-            self.offset_loadcell_weight = np.asarray(lc).mean(axis=0).astype(int)
+            # self.offset_loadcell_weight = np.asarray(lc).mean(axis=0).astype(int)
             
             self.get_logger().warning(f'offset_force3d : {self.offset_force3d}')
             self.get_logger().warning(f'offset_torque3d: {self.offset_torque3d}')
@@ -307,9 +335,15 @@ class SerialNode(Node):
 
             len_f3d = len(self.offset_force3d)
             len_t3d = len(self.offset_torque3d)
-            len_lc = len(self.offset_loadcell_weight)
-            if len_f3d !=3 or len_t3d !=3 or len_lc !=2:
+            if len_f3d !=3 or len_t3d !=3:
                 return 0
+
+            # len_f3d = len(self.offset_force3d)
+            # len_t3d = len(self.offset_torque3d)
+            # len_lc = len(self.offset_loadcell_weight)
+            # if len_f3d !=3 or len_t3d !=3 or len_lc !=2:
+            #     return 0
+
         except KeyboardInterrupt:
             self.get_logger().warning('Keyboard Interrupt')
             return 0

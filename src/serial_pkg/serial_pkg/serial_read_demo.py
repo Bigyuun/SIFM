@@ -45,7 +45,7 @@ class SerialNode(Node):
 
         self.fts_publisher = self.create_publisher(
             WrenchStamped,
-            'fts_data_raw',
+            'fts_data',
             QOS_RKL10V
         )
         
@@ -118,7 +118,7 @@ class SerialNode(Node):
     def publishall(self):
         msg = WrenchStamped()
         msg.header.stamp = self.get_clock().now().to_msg()
-        msg.header.frame_id = 'fts'
+        msg.header.frame_id = 'fts_data'
         msg.wrench.force.x = self.force3d.squeeze()[0]
         msg.wrench.force.y = self.force3d.squeeze()[1]
         msg.wrench.force.z = self.force3d.squeeze()[2]
@@ -129,7 +129,7 @@ class SerialNode(Node):
 
         msg = LoadcellState()
         msg.header.stamp = self.get_clock().now().to_msg()
-        msg.header.frame_id = 'loadcell'
+        msg.header.frame_id = 'loadcell_state'
         msg.stress.append(self.loadcell_weight.squeeze()[0])
         msg.stress.append(self.loadcell_weight.squeeze()[1])
         # msg.output_voltage = self.loadcell_weight[1]

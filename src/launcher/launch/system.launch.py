@@ -55,8 +55,10 @@ def generate_launch_description():
       PythonLaunchDescriptionSource(
         [get_package_share_directory('realsense2_camera'), '/launch/rs_launch.py']),
         launch_arguments={
-          'rgb_camera.profile': '640,480,30',
-          'depth_module.profile': '640,480,30'
+          'rgb_camera.color_profile': '640,480,30',
+          'depth_module.depth_profile': '640,480,30',
+          # 'rgb_camera.profile': '640,480,30',
+          # 'depth_module.profile': '640,480,30',
         }.items()
     ),
     

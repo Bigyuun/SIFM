@@ -42,7 +42,7 @@ class FTS(Node):
 
         self.fts_publisher = self.create_publisher(
             WrenchStamped,
-            'fts_data_raw',
+            'fts_data',
             QOS_RKL10V
         )
 
