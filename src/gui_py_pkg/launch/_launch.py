@@ -34,4 +34,11 @@ def generate_launch_description():
             output='screen',
             #prefix='taskset -c 2 3'
         ),
+        Node(
+            package='gui_py_pkg',
+            executable='rs_node',
+            name='rs_node',
+            output='screen',
+            #prefix='taskset -c 2 3'
+        ),
     ])

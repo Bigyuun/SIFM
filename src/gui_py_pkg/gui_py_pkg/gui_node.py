@@ -78,7 +78,7 @@ class GUINode(Node, QObject):
         self.fts_data = WrenchStamped()
         self.fts_subscriber = self.create_subscription(
             WrenchStamped,
-            'fts_data_raw',
+            'fts_data',
             self.read_fts_data,
             QOS_RKL10V
         )
@@ -181,7 +181,7 @@ class GUINode(Node, QObject):
     def publish(self, msg):
         self.motor_command_publisher_.publish(msg)
 
-    def send_request_move_motor_direct(self, idx=0, tp=0, tvp=100):
+    def send_request_move_motor_direct(self, idx=0, tp=0, tvp=50):
         service_request = MoveMotorDirect.Request()
         service_request.index_motor = idx
         service_request.target_position = tp
@@ -204,14 +204,14 @@ class GUINode(Node, QObject):
         service_request = SetBool.Request()
         service_request.data = True
         future = self.recoder_service_client.call_async(service_request)
-        # rclpy.spin_until_future_complete(self, future)
+        rclpy.spin_until_future_complete(self, future)
         return future.result()
     
     def send_request_record_stop(self):
         service_request = SetBool.Request()
         service_request.data = False
         future = self.recoder_service_client.call_async(service_request)
-        # rclpy.spin_until_future_complete(self, future)
+        rclpy.spin_until_future_complete(self, future)
         return future.result()
 
     def receive_signal_handler(self, data):
@@ -460,9 +460,9 @@ class MyGUI(QWidget):
         self.layout_LPF = QHBoxLayout()
         self.layout_MAF = QHBoxLayout()
 
-        self.LPF_parameter_label = QLabel('Weight:')
+        self.LPF_parameter_label = QLabel('Weight (0 ~ 1):')
         self.LPF_parameter_label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)
-        self.LPF_parameter = QLineEdit('0.3')
+        self.LPF_parameter = QLineEdit('0.5')
         self.LPF_parameter.setFixedWidth(100)
         self.LPF_parameter.setFixedHeight(30)
 
@@ -478,9 +478,9 @@ class MyGUI(QWidget):
         self.layout_MAF.addWidget(self.MAF_parameter)
         
         self.checkbox_filter_list = [QCheckBox('Weight filter(LPF)'), QCheckBox('Moving avg filter(MAF)')]
-        self.checkbox_filter_list[0].setChecked(True)
+        self.checkbox_filter_list[0].setChecked(False)
         self.checkbox_filter_list[0].setFixedWidth(350)
-        self.checkbox_filter_list[1].setChecked(True)
+        self.checkbox_filter_list[1].setChecked(False)
         self.checkbox_filter_list[1].setFixedWidth(350)
         self.layout_LPF.addWidget(self.checkbox_filter_list[0])
         self.layout_MAF.addWidget(self.checkbox_filter_list[1])
@@ -654,7 +654,7 @@ class MyGUI(QWidget):
                         # cmd_val = self.node.motor_state.actual_position[num] + (int(self.motor_pub_line_edit_list[num].text()))
                         cmd_val = int(self.motor_pub_line_edit_list[num].text())
                         print('python', cmd_val)
-                        response = self.node.send_request_move_motor_direct(idx=num, tp=cmd_val, tvp=100)
+                        response = self.node.send_request_move_motor_direct(idx=num, tp=cmd_val, tvp=50)
                     elif self.node.opmode == '0x09': # CSV
                         cmd_val = int(self.motor_pub_line_edit_list[num].text())
                     self.node.get_logger().info(f'motor #{num} -> {cmd_val} command update {response}.')

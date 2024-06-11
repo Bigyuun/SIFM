@@ -29,28 +29,28 @@ class RealSenseSubscriber(Node):
     ## Camera calibration and metadata
     self.color_camera_info_subscriber = self.create_subscription(
       CameraInfo,
-      "camera/color/camera_info",
+      "camera/camera/color/camera_info",
       self.color_camera_info_callback,
       qos_profiile)
 
     ## color rectified image. RGB format
     self.color_image_rect_raw_subscriber = self.create_subscription(
       Image,
-      "camera/color/image_rect_raw",
+      "camera/camera/color/image_raw",
       self.color_image_rect_raw_callback,
       qos_profiile)
 
     ## Camera calibration and metadata
     self.depth_camera_info_subscriber = self.create_subscription(
       CameraInfo,
-      "camera/depth/camera_info",
+      "camera/camera/depth/camera_info",
       self.depth_camera_info_callback,
       qos_profiile)
 
     ## Raw image from device. Contains uint16depth in mm.
     self.depth_image_rect_raw_subscriber = self.create_subscription(
       Image,
-      "camera/depth/image_rect_raw",
+      "camera/camera/depth/image_rect_raw",
       self.depth_image_rect_raw_callback,
       qos_profiile)
 
@@ -66,7 +66,7 @@ class RealSenseSubscriber(Node):
     return
 
   def color_image_rect_raw_callback(self, data):
-    self.get_logger().info("Receiving RGB frame")
+    # self.get_logger().info("Receiving RGB frame")
     current_frame = self.br_rgb.imgmsg_to_cv2(data, 'bgr8')
     cv2.imshow("rgb", current_frame)
     cv2.waitKey(1)
