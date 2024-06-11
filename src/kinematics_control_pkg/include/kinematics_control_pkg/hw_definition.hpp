@@ -29,8 +29,8 @@
  * @brief It means that the ETA(Estimation Time Arrive) is same for all motors (arrive at same time)
  *        If not use it, just each motors move same velocity (not arrive at same time)
 */
-#define MOTOR_CONTROL_SAME_DURATION 0
-#define PERCENT_100 100
+#define MOTOR_CONTROL_SAME_DURATION 1
+#define PERCENT_100 50
 
 //===============================
 // Continuum Manipulator Paremeters
@@ -38,7 +38,7 @@
 #define DOF               1     // Degree of freedom
 
 #define NUM_OF_JOINT      7     // ea
-#define SEGMENT_ARC       15.0  // mm
+#define SEGMENT_ARC       5.0  // mm
 #define SEGMENT_DIAMETER  9     // mm
 #define WIRE_DISTANCE     3.63   // mm
 // #define NUM_OF_JOINT      8     // ea

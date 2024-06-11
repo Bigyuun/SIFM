@@ -217,29 +217,29 @@ void KinematicsControlNode::cal_kinematics(double pAngle, double tAngle, double 
   // this->motor_control_target_val_.target_position[4] = this->virtual_home_pos_[4]
   //                                                           + DIRECTION_COUPLER * f_val[4] * gear_encoder_ratio_conversion(GEAR_RATIO_3_9, ENCODER_CHANNEL, ENCODER_RESOLUTION);
 
-// #if MOTOR_CONTROL_SAME_DURATION
-//   /**
-//    * @brief find max value and make it max_velocity_profile 100 (%),
-//    *        other value have values proportional to 100 (%) each
-//    */
-//   static double prev_f_val[NUM_OF_MOTORS];  // for delta length
+#if MOTOR_CONTROL_SAME_DURATION
+  /**
+   * @brief find max value and make it max_velocity_profile 100 (%),
+   *        other value have values proportional to 100 (%) each
+   */
+  static double prev_f_val[NUM_OF_MOTORS];  // for delta length
 
-//   std::vector<double> abs_f_val(NUM_OF_MOTORS-1, 0);  // 5th DOF is a forceps
-//   for (int i=0; i<NUM_OF_MOTORS-1; i++) { abs_f_val[i] = std::abs(this->motor_control_target_val_.target_position[i] - this->motor_state_.actual_position[i]); }
+  std::vector<double> abs_f_val(NUM_OF_MOTORS-1, 0);  // 5th DOF is a forceps
+  for (int i=0; i<NUM_OF_MOTORS-1; i++) { abs_f_val[i] = std::abs(this->motor_control_target_val_.target_position[i] - this->motor_state_.actual_position[i]); }
 
-//   double max_val = *std::max_element(abs_f_val.begin(), abs_f_val.end()) + 0.00001; // 0.00001 is protection for 0/0 (0 divided by 0)
-//   int max_val_index = std::max_element(abs_f_val.begin(), abs_f_val.end()) - abs_f_val.begin();
-//   for (int i=0; i<(NUM_OF_MOTORS-1); i++) { 
-//     this->motor_control_target_val_.target_velocity_profile[i] = (abs_f_val[i] / max_val) * PERCENT_100;
-//   }
-//   // last index means forceps. It doesn't need velocity profile
-//   this->motor_control_target_val_.target_velocity_profile[NUM_OF_MOTORS-1] = PERCENT_100;
+  double max_val = *std::max_element(abs_f_val.begin(), abs_f_val.end()) + 0.00001; // 0.00001 is protection for 0/0 (0 divided by 0)
+  int max_val_index = std::max_element(abs_f_val.begin(), abs_f_val.end()) - abs_f_val.begin();
+  for (int i=0; i<(NUM_OF_MOTORS-1); i++) { 
+    this->motor_control_target_val_.target_velocity_profile[i] = (abs_f_val[i] / max_val) * PERCENT_100 * 0.5;
+  }
+  // last index means forceps. It doesn't need velocity profile
+  this->motor_control_target_val_.target_velocity_profile[NUM_OF_MOTORS-1] = PERCENT_100 * 0.5;
   
-// #else
-//   for (int i=0; i<NUM_OF_MOTORS; i++) { 
-//     this->motor_control_target_val_.target_velocity_profile[i] = PERCENT_100;
-//   }
-// #endif
+#else
+  for (int i=0; i<NUM_OF_MOTORS; i++) { 
+    this->motor_control_target_val_.target_velocity_profile[i] = PERCENT_100 * 0.5;
+  }
+#endif
   std::cout << "fin" <<std::endl;
 }
 
