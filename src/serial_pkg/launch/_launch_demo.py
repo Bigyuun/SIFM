@@ -29,8 +29,8 @@ def generate_launch_description():
     return LaunchDescription([
         Node(
             package='serial_pkg',
-            executable='serial_read',
-            name='serial_read',
+            executable='serial_read_demo',
+            name='serial_read_demo',
             output='screen',
         ),
     ])

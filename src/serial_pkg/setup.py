@@ -23,7 +23,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'serial_read = serial_pkg.serial_read:main'
+            'serial_read = serial_pkg.serial_read:main',
             'serial_read_demo = serial_pkg.serial_read_demo:main'
         ],
     },

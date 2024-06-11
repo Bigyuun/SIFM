@@ -20,7 +20,7 @@
 #include <semphr.h>  // add the FreeRTOS functions for Semaphores (or Flags).
 #include <SPI.h>
 #include <mcp2515.h> // mcp2515 라이브러리를 설치해야 합니다. (https://github.com/autowp/arduino-mcp2515/)
-#include <HX711.h>
+//#include <HX711.h>
 #include <HX711_ADC.h>
 
 #define FORCE_CAN_ID 0x2A
@@ -30,14 +30,16 @@
 // Load Cell pin
 #define NUMBER_OF_LOADCELL_MODULE        2
 #define PRESS_TENSILE_DIRECTION          1 // PRESS: 1, TENSILE(PULL): -1
+
 #define HX711_DOUT_1                     4  // mcu > HX711 no 1 dout pin
 #define HX711_SCK_1                      5  // mcu > HX711 no 1 sck pin
-#define CALIBRATION_VALUE_1              275.684936
-// #define CALIBRATION_VALUE_1              1000
+#define CALIBRATION_FACTOR_1             275.684936
+#define CALIBRATION_INIT_DATA_1          30640  // it measured without tare() function
 
 #define HX711_DOUT_2                     6  // mcu > HX711 no 2 dout pin
 #define HX711_SCK_2                      7  // mcu > HX711 no 2 sck pin
-#define CALIBRATION_VALUE_2              264.398579
+#define CALIBRATION_FACTOR_2             264.398579
+#define CALIBRATION_INIT_DATA_2          31658  // it measured without tare() function
 
 // CAN comm pin
 #define MCP2515_SPI_CS                   10
@@ -135,8 +137,8 @@ void SerialWriteNode(void *pvParameters)
     str_send_buffer += String(tx_) + ",";
     str_send_buffer += String(ty_) + ",";
     str_send_buffer += String(tz_) + ",";
-    str_send_buffer += String(lc_data_[0], 2) + ",";
-    str_send_buffer += String(lc_data_[1], 2);
+    str_send_buffer += String((lc_data_[0]-CALIBRATION_INIT_DATA_1), 2) + ",";
+    str_send_buffer += String((lc_data_[1]-CALIBRATION_INIT_DATA_2), 2);
     str_send_buffer += String(C_ETX);
     // str_send_buffer += String(lc_tare_offset_[0]) + "/";
     // str_send_buffer += String(lc_tare_offset_[1]);
@@ -152,10 +154,10 @@ void SerialWriteNode(void *pvParameters)
 
 //   HX711 lc1, lc2;
 //   lc1.begin(HX711_DOUT_1, HX711_SCK_1);
-//   lc1.set_scale(CALIBRATION_VALUE_1);
+//   lc1.set_scale(CALIBRATION_FACTOR_1);
 //   lc1.tare();
 //   lc2.begin(HX711_DOUT_2, HX711_SCK_2);
-//   lc2.set_scale(CALIBRATION_VALUE_2);
+//   lc2.set_scale(CALIBRATION_FACTOR_2);
 //   lc2.tare();
 
 //   while(true)
@@ -192,8 +194,8 @@ void LCNode(void *pvParameters){
     Serial.println("Timeout, check MCU>HX711 wiring and pin designations");
     while (1);
   }
-  lc1.setCalFactor(CALIBRATION_VALUE_1); // user set calibration value (float)
-  lc2.setCalFactor(CALIBRATION_VALUE_2); // user set calibration value (float)
+  lc1.setCalFactor(CALIBRATION_FACTOR_1); // user set calibration value (float)
+  lc2.setCalFactor(CALIBRATION_FACTOR_2); // user set calibration value (float)
 
   unsigned long t = 0;
   Serial.println("HX711 is up");
@@ -302,8 +304,8 @@ void SensorsNode(void *pvParameters){
     Serial.println("Timeout, check MCU>HX711 wiring and pin designations");
     while (1);
   }
-  lc1.setCalFactor(CALIBRATION_VALUE_1); // user set calibration value (float)
-  lc2.setCalFactor(CALIBRATION_VALUE_2); // user set calibration value (float)
+  lc1.setCalFactor(CALIBRATION_FACTOR_1); // user set calibration value (float)
+  lc2.setCalFactor(CALIBRATION_FACTOR_2); // user set calibration value (float)
 
   unsigned long t = 0;
   Serial.println("HX711 is up");
