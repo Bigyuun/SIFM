@@ -23,6 +23,16 @@ from custom_interfaces.msg import MotorState
 from custom_interfaces.srv import MoveMotorDirect
 from custom_interfaces.srv import MoveToolAngle
 
+print("Python executable:", sys.executable)
+print("Python version:", sys.version)
+
+# import mediapipe as mp
+# import sympy
+# import json
+# print("Hi, JSON")
+# import xacro
+# import sklearn
+
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt

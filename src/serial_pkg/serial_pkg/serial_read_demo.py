@@ -219,8 +219,9 @@ class SerialNode(Node):
             self.ser.close()
 
     def set_zero(self, avg_num=100):
-        try:
-            pass
+        pass
+        # try:
+        #     pass
         #     force_3d = []
         #     torque_3d = []
         #     lc = []
@@ -299,6 +300,7 @@ class SerialNode(Node):
 
         if sidx == -1 or eidx == -1 or sidx >= eidx:
             return None
+        
         try:
             data_part = str[sidx+1:eidx]
             data_list = data_part.split(',')
@@ -307,6 +309,8 @@ class SerialNode(Node):
         except Exception as e:
             self.get_logger().warning(f'Error while parsing input string: {e}')
             return None
+        finally:
+            pass
 
 
     def MovingAverageFilter(self, prev_data, new_data):
