@@ -58,21 +58,6 @@ std::tuple<double, double, double, double, double> SurgicalTool::get_bending_kin
 void SurgicalTool::kinematics()
 {
 	// y = kx (k=SHIFT/SHIFT_THRESHOLD)
-	if (pAngle_ <= SHIFT_THRESHOLD * torad() && pAngle_ >= -SHIFT_THRESHOLD * torad()) 
-	{ 
-		pAngle_ = (pAngle_- pAngle_ * (surgicaltool_.shift/SHIFT_THRESHOLD)) / surgicaltool_.num_joint;	
-	}
-	else {
-		pAngle_ = (pAngle_ - surgicaltool_.shift) / surgicaltool_.num_joint;
-	}
-
-	if (tAngle_ <= SHIFT_THRESHOLD * torad() && tAngle_ >= -SHIFT_THRESHOLD * torad()) 
-	{ 
-		tAngle_ = (tAngle_- tAngle_ * (surgicaltool_.shift/SHIFT_THRESHOLD)) / surgicaltool_.num_joint;	
-	}
-	else {
-		tAngle_ = (tAngle_ - surgicaltool_.shift) / surgicaltool_.num_joint;
-	}
 
 	this->wrLengthEast_  = 2 * surgicaltool_.arc * surgicaltool_.num_joint * ( cos(alpha_) - cos(alpha_ + (pAngle_ / (2*surgicaltool_.num_joint))) + 1 - cos(tAngle_ / (2*surgicaltool_.num_joint)));
 	this->wrLengthWest_  = 2 * surgicaltool_.arc * surgicaltool_.num_joint * ( cos(alpha_) - cos(alpha_ - (pAngle_ / (2*surgicaltool_.num_joint))) + 1 - cos(tAngle_ / (2*surgicaltool_.num_joint)));
