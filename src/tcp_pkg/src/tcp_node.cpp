@@ -173,7 +173,10 @@ void TCPClientNode::recvmsg()
 #if TCP_SHOW
   for(int i=0; i<NUM_OF_MOTORS; i++){
       // std::cout << "[READ] #" << i << "| pos : " << htole16(recv_val[i*2]) << " / vel : " << htole16(recv_val[2*i + 1]) << std::endl;
-      std::cout << "[READ] #" << i << "| pos : " << recv_val[i*2] << " / vel : " << recv_val[2*i + 1] << std::endl;
+      // std::cout << "[READ] #" << i << "| pos : " << recv_val[i*2] << " / vel : " << recv_val[2*i + 1] << std::endl;
+      std::cout << recv_val[3*i+0] << std::endl;
+      std::cout << recv_val[3*i+1] << std::endl;
+      std::cout << recv_val[3*i+2] << std::endl;
   }
   std::cout << tcp_read_msg_.header.stamp.nanosec << std::endl;;
   printf("=====================================================\n");

@@ -255,20 +255,20 @@ SmState TCPIP_Handler{
 						 actual_vel[i]=Avel(i);
 						 actual_torque[i] = SdoRead(C_DRIVE_BUSID1+i, EPOS4_MOTOR_RATED_TORQUE, 0x00);
 						 // position values
-						 sendData[i*NUM_OF_DATA_TYPE+0]=actual_pos[i].ub0;
-						 sendData[i*NUM_OF_DATA_TYPE+1]=actual_pos[i].ub1;
-						 sendData[i*NUM_OF_DATA_TYPE+2]=actual_pos[i].ub2;
-						 sendData[i*NUM_OF_DATA_TYPE+3]=actual_pos[i].ub3;
+						 sendData[i*BUFFER_TYPE*NUM_OF_DATA_TYPE+0]=actual_pos[i].ub0;
+						 sendData[i*BUFFER_TYPE*NUM_OF_DATA_TYPE+1]=actual_pos[i].ub1;
+						 sendData[i*BUFFER_TYPE*NUM_OF_DATA_TYPE+2]=actual_pos[i].ub2;
+						 sendData[i*BUFFER_TYPE*NUM_OF_DATA_TYPE+3]=actual_pos[i].ub3;
 						 // velocity values
-						 sendData[i*NUM_OF_DATA_TYPE+4]=actual_vel[i].ub0;
-						 sendData[i*NUM_OF_DATA_TYPE+5]=actual_vel[i].ub1;
-						 sendData[i*NUM_OF_DATA_TYPE+6]=actual_vel[i].ub2;
-						 sendData[i*NUM_OF_DATA_TYPE+7]=actual_vel[i].ub3;
+						 sendData[i*BUFFER_TYPE*NUM_OF_DATA_TYPE+4]=actual_vel[i].ub0;
+						 sendData[i*BUFFER_TYPE*NUM_OF_DATA_TYPE+5]=actual_vel[i].ub1;
+						 sendData[i*BUFFER_TYPE*NUM_OF_DATA_TYPE+6]=actual_vel[i].ub2;
+						 sendData[i*BUFFER_TYPE*NUM_OF_DATA_TYPE+7]=actual_vel[i].ub3;
 						 // torque values
-						 sendData[i*NUM_OF_DATA_TYPE+8]=actual_torque[i].ub0;
-						 sendData[i*NUM_OF_DATA_TYPE+9]=actual_torque[i].ub1;
-						 sendData[i*NUM_OF_DATA_TYPE+10]=actual_torque[i].ub2;
-						 sendData[i*NUM_OF_DATA_TYPE+11]=actual_torque[i].ub3;
+						 sendData[i*BUFFER_TYPE*NUM_OF_DATA_TYPE+8]=actual_torque[i].ub0;
+						 sendData[i*BUFFER_TYPE*NUM_OF_DATA_TYPE+9]=actual_torque[i].ub1;
+						 sendData[i*BUFFER_TYPE*NUM_OF_DATA_TYPE+10]=actual_torque[i].ub2;
+						 sendData[i*BUFFER_TYPE*NUM_OF_DATA_TYPE+11]=actual_torque[i].ub3;
 					 }
 					 TCP_sendmsg(sendData);
 					 //data[0]++;
