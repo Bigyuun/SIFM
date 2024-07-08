@@ -43,11 +43,23 @@ ament_target_dependencies(kinematics_control
   custom_interfaces
 )
 
+add_executable(homing
+  src/homing_node.cpp
+)
+ament_target_dependencies(homing
+  rclcpp
+  rclcpp_action
+  std_msgs
+  sensor_msgs
+  geometry_msgs
+  custom_interfaces
+)
+
 # DY
 # install
 install(TARGETS
   kinematics_control
-  # homing_node
+  homing
   # joint_state_publisher
   # broadcaster
   # static_broadcaster
