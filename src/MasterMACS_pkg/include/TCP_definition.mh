@@ -25,7 +25,7 @@
 long socketHandle, status;
 
 dim long receiveData[BUFFER_SIZE];
-dim long sendData[BUFFER_SIZE];	// *2 : actual Pos & Vel
+dim long sendData[BUFFER_SIZE];	// *2 : actual Pos & Vel & Torque
 
 long retVal=0;
 long n=0;
@@ -37,9 +37,11 @@ double target_qd[NUM_OF_MOTORS] = {0};
 double target_qdd[NUM_OF_MOTORS] = {0};
 double target_current[NUM_OF_MOTORS] = {0};
 double target_moment[NUM_OF_MOTORS] = {0};
+
+#define NUM_OF_DATA_TYPE 3  // it must be matched with number of actual_**
 long actual_pos[NUM_OF_MOTORS] = {0};
 long actual_vel[NUM_OF_MOTORS] = {0};
-
+long actual_torque[NUM_OF_MOTORS] = {0};
 
 // Receive protocal parameters
 long target_val[NUM_OF_MOTORS] = {0};

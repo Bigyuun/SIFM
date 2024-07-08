@@ -57,6 +57,7 @@ long EtherCAT_configuration(void)
 		
 		/** @author DY
 		*	@brief  tuning parameters
+		* 	'SDK/Amplifier/SDK_Amplifier_Epos4.mh'
 		*/
 		//SdoWriten(C_DRIVE_BUSID1+i, 0x6065, 0, 4, 100000);	// Floowing Error window
 		//SdoWriten(C_DRIVE_BUSID1+i, 0x607F, 0, 4, 10000);	// Profile Velocity

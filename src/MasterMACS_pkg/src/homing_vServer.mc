@@ -185,7 +185,8 @@ SmState EtherCAT_Handler
 									In Sysvar, just put 0x01, Index(e.g. 4C00), and SubIndex(02)
 									In Index 4th number is axis number : 4C0'axis number'
 									**/
-									printf("#%ld Motor pos : %ld / vel : %ld\n", i, Apos(C_AXIS1+i), Avel(C_AXIS1+i)); //Sysvar(0x014C0002);
+									//printf("#%ld Motor pos : %ld / vel : %ld\n", i, Apos(C_AXIS1+i), Avel(C_AXIS1+i)); //Sysvar(0x014C0002);
+									printf("#%ld Motor pos : %ld / vel : %ld / torque : %ld\n", i, Apos(C_AXIS1+i), Avel(C_AXIS1+i), SdoRead(C_DRIVE_BUSID1+i, EPOS4_MOTOR_RATED_TORQUE, 0x00)); //Sysvar(0x014C0002);
 								  //printf("#%ld Motor pos : %ld / vel : %ld\n", i, BUSMOD_PROCESS(0,PO_BUSMOD_VALUE2), Avel(C_AXIS1+i)); //Sysvar(0x014C0002);
 									//printf(#%ld Motor vel profile : %ld \n", i, target_velocity_profile[i]);
 								}
@@ -246,21 +247,27 @@ SmState TCPIP_Handler{
 	{
 		// send the data (pos, vel)
 		SIG_START = {
-					 for(j=0;j<NUM_OF_MOTORS;j++){
-//						 actual_pos[j]=Apos(C_AXIS1+j);
-//						 actual_vel[j]=Avel(C_AXIS1+j);
-						 actual_pos[j]=Apos(j);
-						 actual_vel[j]=Avel(j);
+					 for(i=0;i<NUM_OF_MOTORS;i++){
+//						 actual_pos[i]=Apos(C_AXIS1+i);
+//						 actual_vel[i]=Avel(C_AXIS1+i);
+						 actual_pos[i]=Apos(i);
+						 actual_vel[i]=Avel(i);
+						 actual_torque[i] = SdoRead(C_DRIVE_BUSID1+i, EPOS4_MOTOR_RATED_TORQUE, 0x00);
 						 // position values
-						 sendData[j*8+0]=actual_pos[j].ub0;
-						 sendData[j*8+1]=actual_pos[j].ub1;
-						 sendData[j*8+2]=actual_pos[j].ub2;
-						 sendData[j*8+3]=actual_pos[j].ub3;
+						 sendData[i*NUM_OF_DATA_TYPE+0]=actual_pos[i].ub0;
+						 sendData[i*NUM_OF_DATA_TYPE+1]=actual_pos[i].ub1;
+						 sendData[i*NUM_OF_DATA_TYPE+2]=actual_pos[i].ub2;
+						 sendData[i*NUM_OF_DATA_TYPE+3]=actual_pos[i].ub3;
 						 // velocity values
-						 sendData[j*8+4]=actual_vel[j].ub0;
-						 sendData[j*8+5]=actual_vel[j].ub1;
-						 sendData[j*8+6]=actual_vel[j].ub2;
-						 sendData[j*8+7]=actual_vel[j].ub3;
+						 sendData[i*NUM_OF_DATA_TYPE+4]=actual_vel[i].ub0;
+						 sendData[i*NUM_OF_DATA_TYPE+5]=actual_vel[i].ub1;
+						 sendData[i*NUM_OF_DATA_TYPE+6]=actual_vel[i].ub2;
+						 sendData[i*NUM_OF_DATA_TYPE+7]=actual_vel[i].ub3;
+						 // torque values
+						 sendData[i*NUM_OF_DATA_TYPE+8]=actual_torque[i].ub0;
+						 sendData[i*NUM_OF_DATA_TYPE+9]=actual_torque[i].ub1;
+						 sendData[i*NUM_OF_DATA_TYPE+10]=actual_torque[i].ub2;
+						 sendData[i*NUM_OF_DATA_TYPE+11]=actual_torque[i].ub3;
 					 }
 					 TCP_sendmsg(sendData);
 					 //data[0]++;
