@@ -7,7 +7,7 @@
             },
             "includePath": [
                 "${workspaceFoler}/**",
-                "${workspaceFolder}/install/custom_interfaces/include/custom_interfaces",
+                "${workspaceFolder}/install/custom_interfaces/include/custom_interfaces/**",
                 "/opt/ros/humble/include/**",
                 "/home/daeyun/Desktop/github_repos/SIFM/**",
                 "/home/daeyun/Desktop/github_repos/SIFM/src/tcp_pkg/include",
@@ -18,6 +18,8 @@
                 "/home/daeyun/Desktop/github_repos/SIFM/src/tcp_pkg",
                 "/home/daeyun/Desktop/github_repos/SIFM/src/tcp_pkg/include",
                 "/home/daeyun/Desktop/github_repos/SIFM/src/surgical_robot_control/include",
+                "/home/daeyun/Desktop/github_repos/SIFM/src/kinematics_control_pkg",
+                "/home/daeyun/Desktop/github_repos/SIFM/src/kinematics_control_pkg/include/**",
                 "/usr/include",
             ],
             "name": "ROS",
