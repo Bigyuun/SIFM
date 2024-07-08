@@ -32,7 +32,6 @@ TCPClientNode::TCPClientNode(const rclcpp::NodeOptions & node_options)
         tcp_send_msg_.target_position = msg->target_position;
         tcp_send_msg_.target_velocity_profile = msg->target_velocity_profile;
         RCLCPP_INFO(this->get_logger(), "motor command received.");
-        RCLCPP_INFO(this->get_logger(), "motor command received.");
       }
     );
 
@@ -184,8 +183,9 @@ void TCPClientNode::recvmsg()
     // tcp_read_msg_.stamp = this->now();
     tcp_read_msg_.header.stamp = this->now();
     tcp_read_msg_.header.frame_id = "motor_controller";
-    tcp_read_msg_.actual_position[i] = recv_val[2*i];
-    tcp_read_msg_.actual_velocity[i] = recv_val[2*i+1];
+    tcp_read_msg_.actual_position[i] = recv_val[3*i];
+    tcp_read_msg_.actual_velocity[i] = recv_val[3*i+1];
+    tcp_read_msg_.actual_torque[i] = recv_val[3*i+2];
   }
 
   publishall();
