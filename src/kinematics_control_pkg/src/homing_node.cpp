@@ -17,8 +17,8 @@
 #include "hw_definition.hpp"
 
 #define HOMING_THRESHOLD 100.0
-#define SPEED_RELEASE  -1
-#define SPEED_REEL    1
+#define SPEED_RELEASE  -2
+#define SPEED_REEL    2
 
 
 using namespace std::chrono_literals;
@@ -95,7 +95,8 @@ public:
   { 
     while (true) 
     {
-        RCLCPP_WARN(this->get_logger(), "Check the ready state of motor and loadcell ..");
+      rclcpp::sleep_for(1s);
+      RCLCPP_WARN(this->get_logger(), "Check the ready state of motor and loadcell ..");
       if (this->motorstate_op_flag_ == false || this->loadcell_op_flag_ == false)
       {
         continue;
@@ -153,7 +154,7 @@ public:
           this->motor_command_.target_position[i] = SPEED_REEL;
         }
       }
-      this->motor_command_.target_position[4] = 0;  // Gripper.
+      // this->motor_command_.target_position[4] = 0;  // Gripper.
 
       motor_command_publisher_->publish(motor_command_);
 

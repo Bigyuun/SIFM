@@ -1,4 +1,9 @@
 import sys, os
+os.environ['QT_QPA_PLATFORM_PLUGIN_PATH'] = '/usr/lib/x86_64-linux-gnu/qt5/plugins/platforms/libqxcb.so'
+
+import PyQt5.QtCore
+print(PyQt5.QtCore.QLibraryInfo.location(PyQt5.QtCore.QLibraryInfo.PluginsPath))
+
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QCheckBox
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import QTimer, QTextStream, Qt, QObject, pyqtSignal
@@ -36,7 +41,7 @@ import cv2
 import numpy as np
 from cv_bridge import CvBridge
 
-class GUINode(Node, QObject):
+class GUINode(Node):
     def __init__(self):
         super().__init__('gui_node')
 
@@ -46,6 +51,8 @@ class GUINode(Node, QObject):
         # 파싱하여 상수 값을 읽어옴
         constants = self.parse_hw_definition_hpp(hw_definition_hpp_path)
         # 상수 값 출력
+        self.get_logger().info(f'{PyQt5.QtCore.QLibraryInfo.location(PyQt5.QtCore.QLibraryInfo.PluginsPath)}')
+
         for key, value in constants.items():
             # self.get_logger().info(f'{key}: {value}')
             self.get_logger().info(f'{key}: {value} ({type(key)}/{type(value)})')
@@ -121,7 +128,7 @@ class GUINode(Node, QObject):
         
 
         # self.data_received_signal = pyqtSignal()
-        self.data_received_signal = pyqtSignal(bool)
+        # self.data_received_signal = pyqtSignal(bool)
 
         # self.realsense_subscriber = RealSenseSubscriber()
         # color rectified image. RGB format

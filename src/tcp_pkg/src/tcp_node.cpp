@@ -31,7 +31,7 @@ TCPClientNode::TCPClientNode(const rclcpp::NodeOptions & node_options)
         // tcp_send_msg_.header.frame_id = msg->header.frame_id;
         tcp_send_msg_.target_position = msg->target_position;
         tcp_send_msg_.target_velocity_profile = msg->target_velocity_profile;
-        RCLCPP_INFO(this->get_logger(), "motor command received.");
+        // RCLCPP_INFO(this->get_logger(), "motor command received.");
       }
     );
 
