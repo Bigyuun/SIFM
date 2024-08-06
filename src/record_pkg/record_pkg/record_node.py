@@ -182,6 +182,15 @@ class RecordNode(Node):
             # self.get_logger().info(f'{key}: {value} ({type(key)}/{type(value)})')
             if key == 'NUM_OF_MOTORS':
                 self.numofmotors = int(value)
+            elif key == 'NUM_OF_JOINT':
+                self.numofjoints = int(value)
+            elif key == 'SEGMENT_ARC':
+                self.segment_arc = float(value)
+            elif key == 'SEGMENT_DIAMETER':
+                self.segment_dia = float(value)
+            elif key == 'WIRE_DISTANCE':
+                self.segment_wd = float(value)
+
             if key == 'OP_MODE':
                 if value == '0x08':
                     self.get_logger().info(f'OP_MODE: CSP')
@@ -373,6 +382,10 @@ class RecordNode(Node):
         metadata = {
             "info": {
                 "NUM_OF_MOTORS": self.numofmotors,
+                'NUM_OF_JOINT': self.numofjoints,
+                'SEGMENT_ARC': self.segment_arc,
+                'SEGMENT_DIAMETER': self.segment_dia,
+                'WIRE_DISTANCE': self.segment_wd
             },
             "units": {
                 "timestamp sec": "s",
