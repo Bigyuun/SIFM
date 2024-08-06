@@ -37,7 +37,7 @@
 //===============================
 #define DOF               1     // Degree of freedom
 
-#define NUM_OF_JOINT      7     // ea
+#define NUM_OF_JOINT      8     // ea
 #define SEGMENT_ARC       5.0  // mm
 #define SEGMENT_DIAMETER  9     // mm
 #define WIRE_DISTANCE     3.63   // mm

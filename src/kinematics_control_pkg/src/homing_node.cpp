@@ -16,9 +16,9 @@
 
 #include "hw_definition.hpp"
 
-#define HOMING_THRESHOLD 100.0
-#define SPEED_RELEASE  -2
-#define SPEED_REEL    2
+#define HOMING_THRESHOLD 150.0
+#define SPEED_RELEASE  -1
+#define SPEED_REEL    1
 
 
 using namespace std::chrono_literals;

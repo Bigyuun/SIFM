@@ -34,12 +34,12 @@
 #define HX711_DOUT_1                     4  // mcu > HX711 no 1 dout pin
 #define HX711_SCK_1                      5  // mcu > HX711 no 1 sck pin
 #define CALIBRATION_FACTOR_1             275.684936
-#define CALIBRATION_INIT_DATA_1          30640  // it measured without tare() function
+#define CALIBRATION_INIT_DATA_1          30670  // it measured without tare() function
 
 #define HX711_DOUT_2                     6  // mcu > HX711 no 2 dout pin
 #define HX711_SCK_2                      7  // mcu > HX711 no 2 sck pin
-#define CALIBRATION_FACTOR_2             264.398579
-#define CALIBRATION_INIT_DATA_2          31658  // it measured without tare() function
+#define CALIBRATION_FACTOR_2             255.5
+#define CALIBRATION_INIT_DATA_2          32770  // it measured without tare() function
 
 // CAN comm pin
 #define MCP2515_SPI_CS                   10
@@ -212,10 +212,8 @@ void LCNode(void *pvParameters){
     //get smoothed value from data set
     if ((newDataReady)) {
       if (millis() > t + serialPrintInterval) {
-        float a = lc1.getData();
-        float b = lc2.getData();
-        lc_data_[0] = a;
-        lc_data_[1] = b;
+        lc_data_[0] = lc1.getData();
+        lc_data_[1] = lc2.getData();
         // Serial.print("Load_cell 1 output val: ");
         // Serial.print(a);
         // Serial.print("    Load_cell 2 output val: ");
@@ -283,32 +281,38 @@ void SensorsNode(void *pvParameters){
   HX711_ADC lc2(HX711_DOUT_2, HX711_SCK_2);
   lc1.begin();
   lc2.begin();
-  Serial.println("HX711 start...");
+  // Serial.println("HX711 start...");
 
   unsigned long stabilizingtime = 2000; // preciscion right after power-up can be improved by adding a few seconds of stabilizing time
   // boolean _tare = true; //set this to false if you don't want tare to be performed in the next step
   boolean _tare = false; //set this to false if you don't want tare to be performed in the next step
-  byte loadcell_1_rdy = 0;
-  byte loadcell_2_rdy = 0;
-  while ((loadcell_1_rdy + loadcell_2_rdy) < 2) { //run startup, stabilization and tare, both modules simultaniously
-    if (!loadcell_1_rdy) loadcell_1_rdy = lc1.startMultiple(stabilizingtime, _tare);
-    if (!loadcell_2_rdy) loadcell_2_rdy = lc2.startMultiple(stabilizingtime, _tare);
-  }
+  // byte loadcell_1_rdy = 0;
+  // byte loadcell_2_rdy = 0;
+  // while ((loadcell_1_rdy + loadcell_2_rdy) < 2) { //run startup, stabilization and tare, both modules simultaniously
+  //   if (!loadcell_1_rdy) loadcell_1_rdy = lc1.startMultiple(stabilizingtime, _tare);
+  //   if (!loadcell_2_rdy) loadcell_2_rdy = lc2.startMultiple(stabilizingtime, _tare);
+  // }
   lc1.start(stabilizingtime, _tare);
   if (lc1.getTareTimeoutFlag()) {
     Serial.println("Timeout, check MCU>HX711 wiring and pin designations");
     while (1);
+  }
+  else {
+    lc1.setCalFactor(CALIBRATION_FACTOR_1); // user set calibration value (float)
   }
   lc2.start(stabilizingtime, _tare);
   if (lc2.getTareTimeoutFlag()) {
     Serial.println("Timeout, check MCU>HX711 wiring and pin designations");
     while (1);
   }
-  lc1.setCalFactor(CALIBRATION_FACTOR_1); // user set calibration value (float)
-  lc2.setCalFactor(CALIBRATION_FACTOR_2); // user set calibration value (float)
+  else {
+    lc2.setCalFactor(CALIBRATION_FACTOR_2); // user set calibration value (float)
+  }
+  // lc1.setCalFactor(CALIBRATION_FACTOR_1); // user set calibration value (float)
+  // lc2.setCalFactor(CALIBRATION_FACTOR_2); // user set calibration value (float)
 
   unsigned long t = 0;
-  Serial.println("HX711 is up");
+  // Serial.println("HX711 is up");
 
   //////////////////////////////////////////////////////////////////////////////////
   while(true)
@@ -346,15 +350,14 @@ void SensorsNode(void *pvParameters){
 
     // check for new data/start next conversion:
     if (lc1.update()) newDataReady = true;
-    lc2.update();
+    if (lc2.update()) newDataReady = true;
+    // lc2.update();
 
     //get smoothed value from data set
     if ((newDataReady)) {
       if (millis() > t + serialPrintInterval) {
-        float a = lc1.getData();
-        float b = lc2.getData();
-        lc_data_[0] = a;
-        lc_data_[1] = b;
+        lc_data_[0] = lc1.getData();
+        lc_data_[1] = lc2.getData();
 
         lc_tare_offset_[0] = lc1.getTareOffset();
         lc_tare_offset_[1] = lc2.getTareOffset();

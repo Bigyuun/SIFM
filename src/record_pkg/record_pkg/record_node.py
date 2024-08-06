@@ -305,9 +305,9 @@ class RecordNode(Node):
         self.get_logger().info(f'CSV is created => name : {self.csv_file_name}')
 
         self.csv_headers = {}
-        self.csv_headers['timestamp sec'] = []
-        self.csv_headers['timestamp nanosec'] = []
-        self.csv_headers['image file'] = []
+        self.csv_headers['sec'] = []
+        self.csv_headers['nanosec'] = []
+        self.csv_headers['image'] = []
         for i in range(self.numofmotors):
             self.csv_headers[f'motor #{i} position'] = []
         for i in range(self.numofmotors):
@@ -321,6 +321,8 @@ class RecordNode(Node):
 
         self.csv_file = open(self.csv_file_name, mode='w')
         self.csv_writer = csv.writer(self.csv_file)
+        self.csv_writer.writerow(self.csv_headers.keys())
+        self.csv_file.flush()
 
     def update_csv(self):
         # if not self.image_flag and not self.fts_data_flag and not self.motor_state_flag and not self.loadcell_data_flag:

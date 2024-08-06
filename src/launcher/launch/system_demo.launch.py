@@ -57,6 +57,7 @@ def generate_launch_description():
         launch_arguments={
           'rgb_camera.color_profile': '640,480,30',
           'depth_module.depth_profile': '640,480,30',
+          'rgb_camera.enable_auto_exposure': 'false',
           # 'rgb_camera.profile': '640,480,30',
           # 'depth_module.profile': '640,480,30',
         }.items()
