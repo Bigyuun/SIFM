@@ -366,7 +366,7 @@ class RecordNode(Node):
         
         self.csv_writer.writerow([timestamp_sec, timestamp_nanosec, image_file]
                                  + [str(value) for value in actual_position]
-                                 + [str(value+1) for value in wire_length]
+                                 + [str(value) for value in wire_length]
                                  + [str(value) for value in loadcell_stress]
                                  + [str(forcexyz.x)]
                                  + [str(forcexyz.y)]
