@@ -148,6 +148,8 @@ private:
 
   geometry_msgs::msg::Twist surgical_tool_pose_;
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr surgical_tool_pose_publisher_;
+  std_msgs::msg::Float32MultiArray wire_length_;
+  rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr wire_length_publisher_;
 
   /**
    * @author DY

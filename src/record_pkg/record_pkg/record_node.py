@@ -12,6 +12,7 @@ import rosbag2_py
 from rclpy.serialization import serialize_message
 
 from std_msgs.msg import String
+from std_msgs.msg import Float32MultiArray
 from geometry_msgs.msg import WrenchStamped
 from std_srvs.srv import SetBool
 from sensor_msgs.msg import Image
@@ -142,6 +143,16 @@ class RecordNode(Node):
             QOS_RKL10V
         )
         self.get_logger().info('motor_state subscriber is created.')
+        
+        self.wire_length_flag = False
+        self.wire_length = MotorState()
+        self.wire_length_subscriber = self.create_subscription(
+            Float32MultiArray,
+            'wire_length',
+            self.read_wire_length,
+            QOS_RKL10V
+        )
+        self.get_logger().info('wire_length subscriber is created.')
 
 
         # self.realsense_subscriber = RealSenseSubscriber()
@@ -289,6 +300,10 @@ class RecordNode(Node):
         self.motor_state_flag = True
         self.motor_state = msg
 
+    def read_wire_length(self, msg):
+        self.wire_length_flag = True
+        self.wire_length = msg
+
     def create_directory(self):
         c_time = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
         self.directory_path = os.path.join('./record', c_time)
@@ -309,7 +324,9 @@ class RecordNode(Node):
         self.csv_headers['nanosec'] = []
         self.csv_headers['image'] = []
         for i in range(self.numofmotors):
-            self.csv_headers[f'motor #{i} position'] = []
+            self.csv_headers[f'motor position #{i}'] = []
+        for i in range(self.numofmotors):
+            self.csv_headers[f'wire length #{i}'] = []
         for i in range(self.numofmotors):
             self.csv_headers[f'loadcell #{i}'] = []
         self.csv_headers['fx'] = []
@@ -331,14 +348,16 @@ class RecordNode(Node):
         
         timestamp_sec = str(self.capture_time.sec)
         timestamp_nanosec = str(self.capture_time.nanosec)
-        image_file = str(self.data_count) +'.png'
+        image_file = str(self.capture_time.sec) + '-' + str(self.data_count) +'.png'
         actual_position = self.motor_state.actual_position
+        wire_length = self.wire_length.data
         loadcell_stress = self.loadcell_data.stress
         forcexyz = self.fts_data.wrench.force
         torquexyz = self.fts_data.wrench.torque
         
         self.csv_writer.writerow([timestamp_sec, timestamp_nanosec, image_file]
                                  + [str(value) for value in actual_position]
+                                 + [str(value+1) for value in wire_length]
                                  + [str(value) for value in loadcell_stress]
                                  + [str(forcexyz.x)]
                                  + [str(forcexyz.y)]
@@ -360,6 +379,7 @@ class RecordNode(Node):
                 "timestamp nanosec": "ns",
                 "image file": "filename",
                 "motor position": "encoder inc",
+                "wire length": "mm",
                 "loadcell": "g",
                 "fx": "mN",
                 "fy": "mN",

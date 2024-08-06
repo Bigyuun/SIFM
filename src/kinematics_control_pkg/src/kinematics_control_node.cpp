@@ -30,7 +30,9 @@ KinematicsControlNode::KinematicsControlNode(const rclcpp::NodeOptions & node_op
   //===============================
   surgical_tool_pose_publisher_ =
     this->create_publisher<geometry_msgs::msg::Twist>("surgical_tool_pose", QoS_RKL10V);
-
+  wire_length_publisher_ = 
+    this->create_publisher<std_msgs::msg::Float32MultiArray>("wire_length", QoS_RKL10V);
+  this->wire_length_.data.resize(NUM_OF_MOTORS);
   //===============================
   // motor status subscriber
   //===============================
@@ -53,6 +55,11 @@ KinematicsControlNode::KinematicsControlNode(const rclcpp::NodeOptions & node_op
         this->motor_state_.actual_acceleration =  msg->actual_acceleration;
         this->motor_state_.actual_torque =  msg->actual_torque;
 
+        for (int i=0; i<NUM_OF_MOTORS; i++) {
+          this->wire_length_.data[i] = this->motor_state_.actual_position[i] * 2 / gear_encoder_ratio_conversion(GEAR_RATIO, ENCODER_CHANNEL, ENCODER_RESOLUTION);
+          // this->wire_length_.data.push_back(this->motor_state_.actual_position[i] * 2 / gear_encoder_ratio_conversion(GEAR_RATIO, ENCODER_CHANNEL, ENCODER_RESOLUTION));
+        }
+        this->wire_length_publisher_->publish(this->wire_length_);
         // if(this->op_mode_ == kEnable) {
         //   this->cal_kinematics();
         //   this->motor_control_publisher_->publish(this->motor_control_target_val_);
@@ -196,6 +203,7 @@ void KinematicsControlNode::cal_kinematics(double pAngle, double tAngle, double 
   f_val[2] = this->ST_.wrLengthSouth_;
   f_val[3] = this->ST_.wrLengthNorth_;
   f_val[4] = this->ST_.wrLengthGrip;
+
   std::cout << "--------------------------" << std::endl;
   std::cout << "East  : " << f_val[0] << " mm" << std::endl;
   std::cout << "West  : " << f_val[1] << " mm" << std::endl;
