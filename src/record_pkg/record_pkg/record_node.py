@@ -279,8 +279,9 @@ class RecordNode(Node):
 
         if self.is_recording:
             self.data_count += 1
-            img_name = str(self.capture_time.sec) + str(self.capture_time.nanosec) + '-' + str(self.data_count) +'.png'
-            cv2.imwrite(self.directory_path_image + '/' + img_name, self.current_frame)
+            
+            image_file = str(self.data_count) + '_' + str(self.capture_time.sec) + '-' + str(self.capture_time.nanosec) +'.png'
+            cv2.imwrite(self.directory_path_image + '/' + image_file, self.current_frame)
             self.update_csv()
 
         # cv2.imshow("[Record Node] rgb", self.current_frame)
@@ -358,7 +359,7 @@ class RecordNode(Node):
         
         timestamp_sec = str(self.capture_time.sec)
         timestamp_nanosec = str(self.capture_time.nanosec)
-        image_file = str(self.capture_time.sec) + str(self.capture_time.nanosec) + '-' + str(self.data_count) +'.png'
+        image_file = str(self.data_count) + '_' + str(self.capture_time.sec) + '-' + str(self.capture_time.nanosec) +'.png'
         actual_position = self.motor_state.actual_position
         wire_length = self.wire_length.data
         loadcell_stress = self.loadcell_data.stress
