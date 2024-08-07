@@ -158,6 +158,11 @@ class GUINode(Node):
             SetBool,
             '/data/record'
         )
+
+        self.set_zero_client = self.create_client(
+            SetBool,
+            '/serial_data/set_zero'
+        )
         # while not self.recoder_service_client.wait_for_service(timeout_sec=2.0):
         #     self.get_logger().warning('The "data/recode" service server not available. Check the kinematics_control_node')
 
@@ -220,6 +225,13 @@ class GUINode(Node):
         future = self.recoder_service_client.call_async(service_request)
         rclpy.spin_until_future_complete(self, future)
         return future.result()
+    
+    def send_request_set_zero(self):
+        service_request = SetBool.Request()
+        service_request.data = True
+        future = self.set_zero_client.call_async(service_request)
+        rclpy.spin_until_future_complete(self, future)
+        return future.result()
 
     def receive_signal_handler(self, data):
         print(data)
@@ -264,6 +276,7 @@ class MyGUI(QWidget):
         self.init_recorder_ui()
         self.init_motor_ui()
         self.init_filter_checkbox()
+        self.init_set_zero_button()
         self.init_fts_ui()
         self.init_loadcell_ui()
         self.init_fts_plot()
@@ -500,6 +513,15 @@ class MyGUI(QWidget):
        
         # self.filter_checkbox = []
 
+    def init_set_zero_button(self):
+        self.zero_button = QPushButton('Set zero')
+        self.zero_button.clicked.connect(self.request_set_zero)
+        self.zero_button.setFixedWidth(150)
+        self.zero_button.setFixedHeight(70)
+        self.zero_button_layout = QVBoxLayout()
+        self.zero_button_layout.addWidget(self.zero_button)
+        self.layout_global.addLayout(self.zero_button_layout)
+
     def init_fts_ui(self):
         '''
         @ autor DY
@@ -677,11 +699,15 @@ class MyGUI(QWidget):
                         response = self.node.send_request_move_tool_angle(pan=float(self.motor_kinematics_line_edit_list[0].text()),
                                                                           tilt=float(self.motor_kinematics_line_edit_list[1].text()),
                                                                           mode=1)
-
-                
         except Exception as e:
             self.node.get_logger().warning(f'F:request_motor_move() -> {e}')
             return
+
+    def request_set_zero(self):
+        try:
+            response = self.node.send_request_set_zero()
+        except Exception as e:
+            self.node.get_logger().warning(f'F:set_zero() -> {e}')
 
     def node_spin_once(self):
         rclpy.spin_once(self.node)

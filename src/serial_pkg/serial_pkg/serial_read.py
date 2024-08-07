@@ -97,7 +97,7 @@ class SerialNode(Node):
         # self.MAF_state_subscriber
         # self.get_logger().info(f'MAF_state_subscriber: {self.MAF_state_subscriber}')
 
-        # self.create_service(SetBool, '/serial_data/set_zero', self.set_zero_callback)
+        self.create_service(SetBool, '/serial_data/set_zero', self.set_zero_callback)
 
         self.serial_port = '/dev/ttyACM0'  # 사용하는 시리얼 포트(COM 포트)를 지정하세요.
         self.baudrate = 115200  # 아두이노와 통신하는 속도
@@ -126,7 +126,7 @@ class SerialNode(Node):
         self.torque3d_buffer = np.zeros((self.size_maf,3))
         self.loadcell_weight_buffer = np.zeros((self.size_maf,2))
 
-        self.get_logger().info('serial node is up.')
+        self.serial_lock = threading.Lock()
         while True:
             suc = self.set_zero(100)
             self.get_logger().info(f'SET ZERO: {suc}')
@@ -196,13 +196,14 @@ class SerialNode(Node):
         try:
             self.get_logger().info('Start serial reading')
             while True:
+                with self.serial_lock:
                 # 시리얼 데이터 읽기
-                try:
-                    # serial_data = ser.readline()  # binary(ASCII)
-                    serial_data = self.ser.readline().decode('utf-8', errors='ignore').rstrip()
-                except UnicodeDecodeError as e:
-                    self.get_logger().warning('Error decoding data')
-                    serial_data = ''
+                    try:
+                        # serial_data = ser.readline()  # binary(ASCII)
+                        serial_data = self.ser.readline().decode('utf-8', errors='ignore').rstrip()
+                    except UnicodeDecodeError as e:
+                        self.get_logger().warning('Error decoding data')
+                        serial_data = ''
 
                 # 수신된 데이터가 비어있지 않으면 출력
                 if serial_data:
@@ -281,46 +282,51 @@ class SerialNode(Node):
 
             # arduino data will be error in few seconds at start point
             # So must flushing few data (N)
-            N = 30
-            for i in range(N):
-                serial_data = self.ser.readline().decode('utf-8', errors='ignore').rstrip()
-                if serial_data:
-                    serial_data = ''
-                if i == N-1:
-                    self.get_logger().warning(f'deleting {N} data is flushing at the start point')
-
-            while count < avg_num:
-                # 시리얼 데이터 읽기
-                try:
+            with self.serial_lock:
+                self.get_logger().info(f'{self.serial_lock}')
+                self.get_logger().info(f'starting zero setup')
+                N = 30
+                for i in range(N):
                     serial_data = self.ser.readline().decode('utf-8', errors='ignore').rstrip()
-                    # 수신된 데이터가 비어있지 않으면 출력
                     if serial_data:
-                        parsing_data = self.parse_serial_data(serial_data)
-                        if parsing_data == None:
-                            continue
-                        else:
-                            # self.get_logger().info(f'parsing data = {parsing_data}')
-                            try:
-                                if np.any(np.array(parsing_data)==0):
-                                    continue
-                                else:
-                                    # self.get_logger().info(f'[{count}]parsing data = {parsing_data}')
-                                    force_3d.append(parsing_data[0:3])
-                                    torque_3d.append(parsing_data[3:6])
-                                    # lc.append(parsing_data[6:8])
-                                    count = count + 1
-                                # self.publishall()
-                            except ValueError as e:
-                                self.get_logger().warning(f'(set_zero) Error {e}')
-                                return 0
-                            finally:
-                                pass
-                except UnicodeDecodeError as e:
-                    self.get_logger().warning(f'Error decoding data: {e}')
-                    serial_data = ''
-                finally:
-                    pass
+                        serial_data = ''
+                    if i == N-1:
+                        self.get_logger().warning(f'deleting {N} data is flushing at the start point')
 
+                while count < avg_num:
+                    # 시리얼 데이터 읽기
+                    try:
+                        serial_data = self.ser.readline().decode('utf-8', errors='ignore').rstrip()
+                        # 수신된 데이터가 비어있지 않으면 출력
+                        if serial_data:
+                            parsing_data = self.parse_serial_data(serial_data)
+                            if parsing_data == None:
+                                continue
+                            else:
+                                # self.get_logger().info(f'parsing data = {parsing_data}')
+                                try:
+                                    if np.any(np.array(parsing_data)==0):
+                                        continue
+                                    else:
+                                        # self.get_logger().info(f'[{count}]parsing data = {parsing_data}')
+                                        force_3d.append(parsing_data[0:3])
+                                        torque_3d.append(parsing_data[3:6])
+                                        # lc.append(parsing_data[6:8])
+                                        count = count + 1
+                                    # self.publishall()
+                                except ValueError as e:
+                                    self.get_logger().warning(f'(set_zero) Error {e}')
+                                    return 0
+                                finally:
+                                    pass
+                    except UnicodeDecodeError as e:
+                        self.get_logger().warning(f'Error decoding data: {e}')
+                        serial_data = ''
+                    finally:
+                        pass
+            
+            self.get_logger().info(f'{self.serial_lock}')
+            
             # self.offset_force3d = int(np.array(force_3d).mean(axis=0))
             # self.offset_torque3d = int(np.array(torque_3d).mean(axis=0))
             # self.offset_loadcell_weight = int(np.array(lc).mean(axis=0))
@@ -349,7 +355,21 @@ class SerialNode(Node):
             return 0
         finally:
             return 1
-    
+
+    def set_zero_callback(self, request, response):
+        try:
+            if request.data:
+                self.set_zero()
+                response.success = True
+                response.message = "Success set_zero()."
+        except Exception as e:
+            self.get_logger().info(f'Exception Error as {e}')
+            response.success = False
+            response.message = 'Error is up during setting zero.'
+            pass
+        
+        return response
+
     def parse_serial_data(self, str: str):
         stx = '/'
         etx = ';'
@@ -381,24 +401,7 @@ class SerialNode(Node):
         self.buffer_count = self.buffer_count +1
         return avg
 
-    # def set_zero_callback(self, request, response):
-    #     force_x = []
-    #     force_y = []
-    #     force_z = []
-    #     torque_x = []
-    #     torque_y = []
-    #     torque_z = []
-    #     lc_1 = []
-    #     lc_2 = []
-
-
-    #     self.force3d[0]
-    #     self.force3d[1]
-    #     self.force3d[2]
-    #     self.torque3d[0]
-    #     self.torque3d[1]
-    #     self.torque3d[2]
-        
+    
 
 def main(args=None):
     rclpy.init(args=args)
