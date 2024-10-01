@@ -144,6 +144,8 @@ private:
   double target_forceps_angle_ = 30;
 
   double alpha_;
+  
+  float release_gain_ = 1.125;
 };
 
 #endif

@@ -146,6 +146,8 @@ private:
   float current_pan_angle_ = 0; 
   float current_grip_angle_ = 0; 
 
+  float release_gain_ = 1.125;
+
   geometry_msgs::msg::Twist surgical_tool_pose_;
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr surgical_tool_pose_publisher_;
   std_msgs::msg::Float32MultiArray wire_length_;

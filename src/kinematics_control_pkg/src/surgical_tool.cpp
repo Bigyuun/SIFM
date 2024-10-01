@@ -64,6 +64,12 @@ void SurgicalTool::kinematics()
 	this->wrLengthSouth_ = 2 * surgicaltool_.arc * surgicaltool_.num_joint * ( cos(alpha_) - cos(alpha_ - (tAngle_ / (2*surgicaltool_.num_joint))) + 1 - cos(pAngle_ / (2*surgicaltool_.num_joint)));
 	this->wrLengthNorth_ = 2 * surgicaltool_.arc * surgicaltool_.num_joint * ( cos(alpha_) - cos(alpha_ + (tAngle_ / (2*surgicaltool_.num_joint))) + 1 - cos(pAngle_ / (2*surgicaltool_.num_joint)));
 
+	// Gain for released wire
+	if (this->wrLengthEast_ < 0) { this->wrLengthEast_ = this->wrLengthEast_ * this->release_gain_; }
+	if (this->wrLengthWest_ < 0) { this->wrLengthWest_ = this->wrLengthWest_ * this->release_gain_; }
+	if (this->wrLengthSouth_ < 0) { this->wrLengthSouth_ = this->wrLengthSouth_ * this->release_gain_; }
+	if (this->wrLengthNorth_ < 0) { this->wrLengthNorth_ = this->wrLengthNorth_ * this->release_gain_; }
+
 	this->wrLengthEast_ =  this->wrLengthEast_ / mm_;
 	this->wrLengthWest_ =  this->wrLengthWest_ / mm_;
 	this->wrLengthSouth_ = this->wrLengthSouth_ / mm_;
