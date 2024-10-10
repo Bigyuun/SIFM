@@ -38,6 +38,7 @@ ament_target_dependencies(kinematics_control
   rclcpp
   rclcpp_action
   std_msgs
+  std_srvs
   sensor_msgs
   geometry_msgs
   custom_interfaces

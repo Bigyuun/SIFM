@@ -49,6 +49,7 @@
 #include "std_msgs/msg/int32_multi_array.hpp"
 #include "std_msgs/msg/int32.hpp"
 #include "std_msgs/msg/float32_multi_array.hpp"
+#include "std_srvs/srv/set_bool.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 #include "custom_interfaces/msg/motor_state.hpp"
 #include "custom_interfaces/msg/motor_command.hpp"
@@ -119,6 +120,12 @@ private:
   void publishall();
 
   /**
+   * @author DY
+   * @brief Sine wave publish function
+   */
+  void publish_sine_wave();
+
+  /**
    * @brief virtual_position
    */
   int virtual_home_pos_[NUM_OF_MOTORS] = {0,};
@@ -146,7 +153,6 @@ private:
   float current_pan_angle_ = 0; 
   float current_grip_angle_ = 0; 
 
-  float release_gain_ = 1.125;
 
   geometry_msgs::msg::Twist surgical_tool_pose_;
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr surgical_tool_pose_publisher_;
@@ -167,6 +173,14 @@ private:
    */
   rclcpp::Service<MoveMotorDirect>::SharedPtr move_motor_direct_service_server_;
   rclcpp::Service<MoveToolAngle>::SharedPtr move_tool_angle_service_server_;
+  rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr move_sine_wave_server_;
+  rclcpp::TimerBase::SharedPtr timer_;  // 타이머는 시작과 중지를 위해 nullptr로 관리
+  int timer_period_ms_ = 10;
+  float amp_ = 60;
+  float period_ = 10; // secs
+  float count_ = 0;
+  float count_add_ = timer_period_ms_ / 1000.0;
+  float angle_ = 0;
 };
 
 #endif

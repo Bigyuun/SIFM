@@ -114,9 +114,9 @@ KinematicsControlNode::KinematicsControlNode(const rclcpp::NodeOptions & node_op
         }
       }
 
-      std::cout << target_position << std::endl;
-      std::cout << this->motor_state_.actual_position [0] << std::endl;
-      std::cout << this->motor_control_target_val_.target_position[0] << std::endl;
+      // std::cout << target_position << std::endl;
+      // std::cout << this->motor_state_.actual_position [0] << std::endl;
+      // std::cout << this->motor_control_target_val_.target_position[0] << std::endl;
 
       // publish and response for service from client
       if(this->op_mode_ == kEnable) {
@@ -150,6 +150,7 @@ KinematicsControlNode::KinematicsControlNode(const rclcpp::NodeOptions & node_op
           this->surgical_tool_pose_publisher_->publish(this->surgical_tool_pose_);
         }
         else if (request->mode == 1) {
+          // MOVE RELATIVELY
           double pan_angle = this->current_pan_angle_ + request->panangle;
           double tilt_angle = this->current_tilt_angle_ + request->tiltangle;
           double grip_angle = this->current_grip_angle_ + request->gripangle;
@@ -170,6 +171,41 @@ KinematicsControlNode::KinematicsControlNode(const rclcpp::NodeOptions & node_op
   move_tool_angle_service_server_ = 
     create_service<MoveToolAngle>("kinematics/move_tool_angle", get_target_move_tool_angle);
 
+
+  auto sine_wave_callback = 
+  [this](
+  const std::shared_ptr<std_srvs::srv::SetBool::Request> request,
+        std::shared_ptr<std_srvs::srv::SetBool::Response> response) -> void
+  {
+    try {
+      // run
+      if(request->data) {
+        // True --> Start timer
+        RCLCPP_INFO(this->get_logger(), "Starting sine wave publishing.");
+        if (timer_ == nullptr) {
+          timer_ = this->create_wall_timer(
+            std::chrono::milliseconds(timer_period_ms_),
+            std::bind(&KinematicsControlNode::publish_sine_wave, this));
+        }
+        response->success = true;
+        response->message = "Sine wave publishing started.";
+      } else {
+        // 서비스 요청이 False일 때 타이머 중지
+        if (timer_ != nullptr) {
+            timer_->cancel();
+            timer_ = nullptr;
+        }
+        response->success = true;
+        response->message = "Sine wave publishing stopped.";
+      }
+
+      RCLCPP_INFO(this->get_logger(), "Service <sine_wave> accept the request.");
+    } catch (const std::exception & e) {
+      RCLCPP_WARN(this->get_logger(), "Error: %s", e.what());
+    }
+  };
+  move_sine_wave_server_ = 
+    create_service<std_srvs::srv::SetBool>("kinematics/move_sinewave", sine_wave_callback);
 
   /**
    * @brief homing
@@ -193,9 +229,9 @@ void KinematicsControlNode::cal_kinematics(double pAngle, double tAngle, double 
   this->surgical_tool_pose_.angular.z = pAngle * M_PI/180;
   this->ST_.get_bending_kinematic_result(this->current_pan_angle_, this->current_tilt_angle_, this->current_grip_angle_);
 
-  std::cout << this->current_pan_angle_ << std::endl;
-  std::cout << this->current_tilt_angle_ << std::endl;
-  std::cout << this->current_grip_angle_ << std::endl;
+  // std::cout << this->current_pan_angle_ << std::endl;
+  // std::cout << this->current_tilt_angle_ << std::endl;
+  // std::cout << this->current_grip_angle_ << std::endl;
 
   double f_val[5];
   f_val[0] = this->ST_.wrLengthEast_;
@@ -204,12 +240,12 @@ void KinematicsControlNode::cal_kinematics(double pAngle, double tAngle, double 
   f_val[3] = this->ST_.wrLengthNorth_;
   f_val[4] = this->ST_.wrLengthGrip;
 
-  std::cout << "--------------------------" << std::endl;
-  std::cout << "East  : " << f_val[0] << " mm" << std::endl;
-  std::cout << "West  : " << f_val[1] << " mm" << std::endl;
-  std::cout << "South : " << f_val[2] << " mm" << std::endl;
-  std::cout << "North : " << f_val[3] << " mm" << std::endl;
-  std::cout << "Grip  : " << f_val[4] << " mm" << std::endl;
+  // std::cout << "--------------------------" << std::endl;
+  // std::cout << "East  : " << f_val[0] << " mm" << std::endl;
+  // std::cout << "West  : " << f_val[1] << " mm" << std::endl;
+  // std::cout << "South : " << f_val[2] << " mm" << std::endl;
+  // std::cout << "North : " << f_val[3] << " mm" << std::endl;
+  // std::cout << "Grip  : " << f_val[4] << " mm" << std::endl;
 
   this->motor_control_target_val_.header.stamp = this->now();
   this->motor_control_target_val_.header.frame_id = "kinematics_motor_target_position";
@@ -248,7 +284,7 @@ void KinematicsControlNode::cal_kinematics(double pAngle, double tAngle, double 
     this->motor_control_target_val_.target_velocity_profile[i] = PERCENT_100 * 0.5;
   }
 #endif
-  std::cout << "fin" <<std::endl;
+  // std::cout << "fin" <<std::endl;
 }
 
 double KinematicsControlNode::gear_encoder_ratio_conversion(double gear_ratio, int e_channel, int e_resolution) {
@@ -356,6 +392,13 @@ void KinematicsControlNode::publishall()
 
 }
 
-
-
-
+void KinematicsControlNode::publish_sine_wave()
+{
+  double omega = 2.0 * M_PI / period_;
+  angle_ = amp_ * std::sin(omega * count_);
+  cal_kinematics(angle_, angle_, 0);
+  motor_control_publisher_->publish(motor_control_target_val_);
+  surgical_tool_pose_publisher_->publish(surgical_tool_pose_);
+  count_ += count_add_;  // 각도를 증가시켜 사인파를 만듦
+  std::cout << omega << " / " << amp_ << " / " << angle_ << " / " << count_ << " / " << count_add_ << std::endl;
+}

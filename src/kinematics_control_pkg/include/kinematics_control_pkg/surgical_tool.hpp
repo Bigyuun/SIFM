@@ -145,7 +145,7 @@ private:
 
   double alpha_;
   
-  float release_gain_ = 1.125;
+  float release_gain_ = 1.0;
 };
 
 #endif
