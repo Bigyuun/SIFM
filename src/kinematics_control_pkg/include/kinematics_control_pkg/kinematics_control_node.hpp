@@ -175,7 +175,8 @@ private:
   rclcpp::Service<MoveMotorDirect>::SharedPtr move_motor_direct_service_server_;
   rclcpp::Service<MoveToolAngle>::SharedPtr move_tool_angle_service_server_;
   rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr move_sine_wave_server_;
-  rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr circle_motion_server_;
+  rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr move_circle_motion_server_;
+  rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr move_moebius_motion_server_;
   rclcpp::TimerBase::SharedPtr timer_;  // 타이머는 시작과 중지를 위해 nullptr로 관리
   int timer_period_ms_ = 10;
   float amp_ = 60;

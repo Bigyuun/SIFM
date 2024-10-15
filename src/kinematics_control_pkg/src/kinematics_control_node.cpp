@@ -240,8 +240,43 @@ KinematicsControlNode::KinematicsControlNode(const rclcpp::NodeOptions & node_op
       RCLCPP_WARN(this->get_logger(), "Error: %s", e.what());
     }
   };
-  move_sine_wave_server_ = 
-    create_service<std_srvs::srv::SetBool>("kinematics/circle_motion", sine_wave_callback);
+  move_circle_motion_server_ = 
+    create_service<std_srvs::srv::SetBool>("kinematics/move_circle_motion", circle_motion_callback);
+
+  auto moebius_motion_callback = 
+  [this](
+  const std::shared_ptr<std_srvs::srv::SetBool::Request> request,
+        std::shared_ptr<std_srvs::srv::SetBool::Response> response) -> void
+  {
+    try {
+      // run
+      if(request->data) {
+        // True --> Start timer
+        RCLCPP_INFO(this->get_logger(), "Starting Circle-motion publishing.");
+        if (timer_ == nullptr) {
+          timer_ = this->create_wall_timer(
+            std::chrono::milliseconds(timer_period_ms_),
+            std::bind(&KinematicsControlNode::publish_circle_motion, this));
+        }
+        response->success = true;
+        response->message = "Circle-motion publishing started.";
+      } else {
+        // 서비스 요청이 False일 때 타이머 중지
+        if (timer_ != nullptr) {
+            timer_->cancel();
+            timer_ = nullptr;
+        }
+        response->success = true;
+        response->message = "Circle-motion publishing stopped.";
+      }
+
+      RCLCPP_INFO(this->get_logger(), "Service <circle_motion> accept the request.");
+    } catch (const std::exception & e) {
+      RCLCPP_WARN(this->get_logger(), "Error: %s", e.what());
+    }
+  };
+  move_moebius_motion_server_ = 
+    create_service<std_srvs::srv::SetBool>("kinematics/move_moebius_motion", moebius_motion_callback);
 
   /**
    * @brief homing
@@ -444,6 +479,18 @@ void KinematicsControlNode::publish_circle_motion()
   double omega = 2.0 * M_PI / period_;
   double pan_deg = amp_ * std::sin(omega * count_);
   double tilt_deg = amp_ * std::cos(omega * count_);
+  cal_kinematics(pan_deg, tilt_deg, 0);
+  motor_control_publisher_->publish(motor_control_target_val_);
+  surgical_tool_pose_publisher_->publish(surgical_tool_pose_);
+  count_ += count_add_;  // 각도를 증가시켜 사인파를 만듦
+  std::cout << pan_deg <<  " / " << tilt_deg << std::endl;
+}
+
+void KinematicsControlNode::publish_moebius_motion()
+{
+  double omega = 2.0 * M_PI / period_;
+  double pan_deg = 0.5 * amp_ * std::sin((omega/2.0) * count_);
+  double tilt_deg = amp_ * std::sin(omega * count_);
   cal_kinematics(pan_deg, tilt_deg, 0);
   motor_control_publisher_->publish(motor_control_target_val_);
   surgical_tool_pose_publisher_->publish(surgical_tool_pose_);
