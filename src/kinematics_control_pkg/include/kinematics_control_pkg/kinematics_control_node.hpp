@@ -125,6 +125,7 @@ private:
    */
   void publish_sine_wave();
   void publish_circle_motion();
+  void publish_moebius_motion();
 
   /**
    * @brief virtual_position

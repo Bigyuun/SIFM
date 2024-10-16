@@ -186,6 +186,8 @@ KinematicsControlNode::KinematicsControlNode(const rclcpp::NodeOptions & node_op
           timer_ = this->create_wall_timer(
             std::chrono::milliseconds(timer_period_ms_),
             std::bind(&KinematicsControlNode::publish_sine_wave, this));
+        } else {
+          RCLCPP_WARN(this->get_logger(), "Error: sine wave motion is operating. Please stop using [ros2 service call]");
         }
         response->success = true;
         response->message = "Sine wave publishing started.";
@@ -222,9 +224,12 @@ KinematicsControlNode::KinematicsControlNode(const rclcpp::NodeOptions & node_op
           timer_ = this->create_wall_timer(
             std::chrono::milliseconds(timer_period_ms_),
             std::bind(&KinematicsControlNode::publish_circle_motion, this));
+        } else {
+          RCLCPP_WARN(this->get_logger(), "Error: circle motion is operating. Please stop using [ros2 service call]");
         }
         response->success = true;
         response->message = "Circle-motion publishing started.";
+        
       } else {
         // 서비스 요청이 False일 때 타이머 중지
         if (timer_ != nullptr) {
@@ -256,10 +261,13 @@ KinematicsControlNode::KinematicsControlNode(const rclcpp::NodeOptions & node_op
         if (timer_ == nullptr) {
           timer_ = this->create_wall_timer(
             std::chrono::milliseconds(timer_period_ms_),
-            std::bind(&KinematicsControlNode::publish_circle_motion, this));
+            std::bind(&KinematicsControlNode::publish_moebius_motion, this));
+        }
+        else {
+          RCLCPP_WARN(this->get_logger(), "Error: moebius motion is operating. Please stop using [ros2 service call]");
         }
         response->success = true;
-        response->message = "Circle-motion publishing started.";
+        response->message = "Moebius-motion publishing started.";
       } else {
         // 서비스 요청이 False일 때 타이머 중지
         if (timer_ != nullptr) {
@@ -267,7 +275,7 @@ KinematicsControlNode::KinematicsControlNode(const rclcpp::NodeOptions & node_op
             timer_ = nullptr;
         }
         response->success = true;
-        response->message = "Circle-motion publishing stopped.";
+        response->message = "Moebius-motion publishing stopped.";
       }
 
       RCLCPP_INFO(this->get_logger(), "Service <circle_motion> accept the request.");
@@ -489,11 +497,11 @@ void KinematicsControlNode::publish_circle_motion()
 void KinematicsControlNode::publish_moebius_motion()
 {
   double omega = 2.0 * M_PI / period_;
-  double pan_deg = 0.5 * amp_ * std::sin((omega/2.0) * count_);
+  double pan_deg = 0.5 * amp_ * std::sin((omega*2.0) * count_);
   double tilt_deg = amp_ * std::sin(omega * count_);
   cal_kinematics(pan_deg, tilt_deg, 0);
   motor_control_publisher_->publish(motor_control_target_val_);
   surgical_tool_pose_publisher_->publish(surgical_tool_pose_);
-  count_ += count_add_;  // 각도를 증가시켜 사인파를 만듦
+  count_ += count_add_;
   std::cout << pan_deg <<  " / " << tilt_deg << std::endl;
 }
